@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PD3 Analysis Hub - ระบบวิเคราะห์ข้อมูล NCR & Production</title>
+    <meta name="description" content="PD3 Analysis Hub - ระบบวิเคราะห์ข้อมูล NCR และการผลิตแบบครบวงจร">
+    <meta name="keywords" content="NCR, Analysis, Production, Data Analytics, PD3">
+    <meta name="author" content="Awirut (ZP1048)">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --accent: #007aff;
+            --accent-hover: #0051d5;
+            --success: #34c759;
+            --warning: #ff9500;
+            --danger: #ff3b30;
+            --info: #5856d6;
+            --bg: #ffffff;
+            --bg-secondary: #f5f5f7;
+            --text: #1d1d1f;
+            --text-secondary: #86868b;
+            --border: #d2d2d7;
+            --shadow: 0 2px 16px rgba(0,0,0,0.08);
+            --shadow-hover: 0 4px 24px rgba(0,0,0,0.12);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Sarabun', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Top Navigation Bar */
+        .top-nav {
+            background: var(--bg);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-logo {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #007aff, #5856d6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding-left: 12px;
+            border-left: 2px solid var(--border);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            height: 100%;
+            align-items: center;
+        }
+
+        .nav-tab {
+            padding: 8px 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            position: relative;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-tab:hover {
+            background: var(--bg-secondary);
+            color: var(--text);
+        }
+
+        .nav-tab.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .nav-tab .icon {
+            font-size: 18px;
+        }
+
+        .nav-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .nav-version {
+            padding: 4px 12px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .module-container {
+            display: none;
+        }
+
+        .module-container.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .welcome-title {
+            font-size: 56px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 20px;
+            letter-spacing: -1.5px;
+            background: linear-gradient(135deg, #007aff, #5856d6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-subtitle {
+            font-size: 24px;
+            color: var(--text-secondary);
+            margin-bottom: 60px;
+            font-weight: 400;
+        }
+
+        .welcome-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 32px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .welcome-card {
+            background: var(--bg);
+            border-radius: 18px;
+            padding: 40px 32px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .welcome-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--accent);
+        }
+
+        .welcome-card-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .welcome-card-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 12px;
+        }
+
+        .welcome-card-description {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        .site-footer {
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            padding: 24px;
+            text-align: center;
+            margin-top: 80px;
+        }
+
+        .copyright {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                height: auto;
+                padding: 16px 20px;
+                gap: 16px;
+            }
+
+            .nav-brand {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .nav-tabs {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .nav-info {
+                display: none;
+            }
+
+            .welcome-title {
+                font-size: 36px;
+            }
+
+            .welcome-subtitle {
+                font-size: 18px;
+            }
+        }
+
+        /* Module-specific styles will be loaded when each module is activated */
+        .module-styles {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <div class="nav-logo">PD3 Analysis </div>
+                <div class="nav-subtitle">ระบบวิเคราะห์ข้อมูลด้านคุณภาพและการผลิต</div>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showModule('welcome')">
+                    <span class="icon"></span>
+                    Home
+                </button>
+                <button class="nav-tab" onclick="showModule('ncr')">
+                    <span class="icon"></span>
+                    NCR Analysis
+                </button>
+                <button class="nav-tab" onclick="showModule('pd3')">
+                    <span class="icon"></span>
+                    PD3 Production
+                </button>
+            </div>
+            <div class="nav-info">
+                <span class="nav-version">Version 2.0</span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Welcome Module -->
+        <div id="welcomeModule" class="module-container active">
+            <div class="welcome-screen">
+                <h1 class="welcome-title">ยินดีต้อนรับสู่ระบบวิเคราะห์ข้อมูล</h1>
+                <p class="welcome-subtitle">กรุณาเลือกส่วนการวิเคราะห์ที่ต้องการ</p>
+                
+                <div class="welcome-cards">
+                    <div class="welcome-card" onclick="showModule('ncr')">
+                        <div class="welcome-card-icon"></div>
+                        <h3 class="welcome-card-title">NCR Analysis</h3>
+                        <p class="welcome-card-description">
+                            วิเคราะห์ข้อมูล   NCR (Non-Conformance Report)                                                  
+                            ตรวจสอบปัญหาคุณภาพ จัดกลุ่มตามลูกค้า 
+                            ตราสินค้า และประเภทของปัญหา
+                        </p>
+                    </div>
+                    
+                    <div class="welcome-card" onclick="showModule('pd3')">
+                        <div class="welcome-card-icon"></div>
+                        <h3 class="welcome-card-title">PD3 Production</h3>
+                        <p class="welcome-card-description">
+                            วิเคราะห์ข้อมูลการผลิตจากรายงานทั้งปี
+                            เชื่อมโยงของเสีย เครื่องจักร และการใช้สีในการพิมพ์
+                            เพื่อเปรียบเทียบประสิทธิภาพ
+
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NCR Module (removed - now redirects) -->
+        
+        <!-- PD3 Module (removed - now redirects) -->
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="copyright">
+           
+        </div>
+    </footer>
+
+    <script>
+        function showModule(moduleName) {
+            if (moduleName === 'welcome') {
+                // Stay on current page - update active tab only
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                event.currentTarget.classList.add('active');
+            } else if (moduleName === 'ncr') {
+                // Redirect to NCR page (full screen)
+                window.location.href = 'NCR_analyzer.html';
+            } else if (moduleName === 'pd3') {
+                // Redirect to PD3 page (full screen)
+                window.location.href = 'PD3_analyzer_fullyear.html';
+            }
+        }
+
+        // Handle keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.altKey) {
+                if (e.key === '1') {
+                    document.querySelectorAll('.nav-tab')[0].click();
+                } else if (e.key === '2') {
+                    document.querySelectorAll('.nav-tab')[1].click();
+                } else if (e.key === '3') {
+                    document.querySelectorAll('.nav-tab')[2].click();
+                }
+            }
+        });
+
+        // Show welcome message
+        console.log('%c🎉 PD3 Analysis Hub v2.0', 'font-size: 20px; font-weight: bold; color: #007aff;');
+        console.log('%c✨ Unified Analytics Platform', 'font-size: 14px; color: #5856d6;');
+        console.log('%cKeyboard Shortcuts:', 'font-size: 12px; font-weight: bold; margin-top: 10px;');
+        console.log('%c  Alt + 1 : Home', 'font-size: 11px; color: #666;');
+        console.log('%c  Alt + 2 : NCR Analysis', 'font-size: 11px; color: #666;');
+        console.log('%c  Alt + 3 : PD3 Production', 'font-size: 11px; color: #666;');
+    </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary Files
+*.tmp
+*.log
+*.bak
+*.cache
+
+# Node modules (if using npm in future)
+node_modules/
+package-lock.json
+
+# Build and Distribution
+dist/
+build/
+
+# Excel temporary files
+~$*.xlsx
+~$*.xls
+
+# Backup files
+*_backup.*
+*.backup
+
+# Test files (optional)
+test/
+tests/
+*.test.html
+
+# Large data files (optional - uncomment if needed)
+# *.xlsx
+# *.xls
+# *.csv

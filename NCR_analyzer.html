@@ -1,0 +1,2704 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCR Data Analysis - ระบบวิเคราะห์ข้อมูล NCR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --accent: #007aff;
+            --accent-hover: #0051d5;
+            --success: #34c759;
+            --warning: #ff9500;
+            --danger: #ff3b30;
+            --info: #5856d6;
+            --bg: #ffffff;
+            --bg-secondary: #f5f5f7;
+            --text: #1d1d1f;
+            --text-secondary: #86868b;
+            --border: #d2d2d7;
+            --shadow: 0 2px 16px rgba(0,0,0,0.08);
+            --shadow-hover: 0 4px 24px rgba(0,0,0,0.12);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Sarabun', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding-top: 20px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+            letter-spacing: -1.2px;
+        }
+
+        .header p {
+            font-size: 19px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            line-height: 1.8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            background: var(--bg);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 48px;
+            margin-bottom: 40px;
+        }
+
+        .upload-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .upload-description {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            text-align: center;
+            line-height: 1.7;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 48px 32px;
+            text-align: center;
+            background: var(--bg-secondary);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 24px;
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent);
+            background: rgba(0, 122, 255, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent);
+            background: rgba(0, 122, 255, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .upload-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .upload-subtext {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .analyze-button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: block;
+            margin: 24px auto 0;
+            min-width: 200px;
+        }
+
+        .analyze-button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .analyze-button:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .file-info {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .file-size {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Progress Modal */
+        .progress-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            z-index: 9998;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .progress-content {
+            background: var(--bg);
+            padding: 48px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 500px;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .spinner {
+            border: 3px solid var(--bg-secondary);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-info {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.8;
+            margin-bottom: 8px;
+        }
+
+        .progress-info p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-top: 8px;
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+
+        .results-header {
+            background: var(--bg);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 32px;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .results-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .results-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .summary-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .summary-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .summary-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .summary-card.customers .summary-value { color: var(--info); }
+        .summary-card.brands .summary-value { color: var(--accent); }
+        .summary-card.defects .summary-value { color: var(--warning); }
+        .summary-card.total .summary-value { color: var(--danger); }
+
+        /* Charts Section */
+        .charts-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        @media (min-width: 1200px) {
+            .charts-section {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .chart-container {
+            background: var(--bg);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 32px;
+        }
+
+        .chart-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+        
+        /* เพิ่มความสูงสำหรับกราฟรายลูกค้า (Horizontal) */
+        #customers .chart-wrapper {
+            height: 700px;
+        }
+        
+        /* Summary card สำหรับข้อมูลเพิ่มเติม */
+        .customer-summary {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .summary-item {
+            text-align: center;
+        }
+        
+        .summary-item .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+        
+        .summary-item .label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-content {
+            background: var(--bg);
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            padding: 25px 30px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #2c008c 0%, #0297b1 100%);
+            color: white;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .modal-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.2s;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+        
+        .modal-body {
+            padding: 30px;
+            overflow-y: auto;
+        }
+        
+        .modal-summary {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 4px solid #1d1d1f;
+        }
+        
+        .modal-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .modal-summary-item {
+            text-align: center;
+        }
+        
+        .modal-summary-item .label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        
+        .modal-summary-item .value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1d1d1f;
+        }
+        
+        .detail-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .detail-item {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 18px;
+            border-left: 4px solid #1d1d1f;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .detail-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.15);
+        }
+        
+        .detail-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .detail-item-number {
+            background: #1d1d1f;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .detail-item-qty {
+            background: linear-gradient(135deg, #ff6b6b, #ff3b30);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .detail-item-description {
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 14px;
+            padding: 12px;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        
+        .detail-item-description:empty::before {
+            content: 'ไม่มีรายละเอียด';
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        
+        .table-row-clickable {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .table-row-clickable:hover {
+            background-color: rgba(255, 107, 107, 0.08) !important;
+        }
+
+        /* Tables Section */
+        .table-section {
+            background: var(--bg);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+
+        .table-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .table-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .table-controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            max-width: 400px;
+            min-width: 250px;
+            padding: 12px 40px 12px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: var(--bg);
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .filter-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .filter-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-right: 8px;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .filter-select {
+            padding: 8px 32px 8px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--bg);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 180px;
+            font-family: inherit;
+        }
+
+        .filter-select:hover {
+            border-color: var(--accent);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        /* Search input for filters */
+        .filter-search-input {
+            padding: 6px 10px;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+            background: var(--bg-secondary);
+            color: var(--text);
+            transition: all 0.3s;
+            width: 100%;
+            font-family: inherit;
+            margin-bottom: 6px;
+        }
+
+        .filter-search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+            background: var(--bg);
+        }
+
+        .filter-search-input::placeholder {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .filter-group-with-search {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .clear-filters-btn {
+            padding: 8px 16px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .clear-filters-btn:hover {
+            background: #e63027;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+        }
+
+        .filter-count {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding: 6px 12px;
+            background: var(--bg);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .export-button {
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .export-button:hover {
+            background: #30a656;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .data-table th {
+            background: var(--bg-secondary);
+            color: var(--text);
+            font-weight: 600;
+            padding: 16px 12px;
+            text-align: left;
+            border-bottom: 2px solid var(--border);
+            position: sticky;
+            top: 0;
+        }
+
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        /* Tabs */
+        .tabs-container {
+            margin-bottom: 32px;
+        }
+
+        .tabs {
+            display: flex;
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: var(--shadow);
+            overflow-x: auto;
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            background: transparent;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .tab:hover:not(.active) {
+            background: var(--bg-secondary);
+            color: var(--text);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 16px;
+            }
+
+            .header h1 {
+                font-size: 36px;
+            }
+
+            .upload-section,
+            .chart-container,
+            .table-section {
+                padding: 24px;
+            }
+
+            .results-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+
+            .table-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: auto;
+            }
+        }
+
+        /* Footer */
+        .site-footer {
+            margin-top: 48px;
+            padding: 18px 20px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: transparent;
+        }
+
+        .site-footer .copyright,
+        .site-footer .credit {
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: 0.2px;
+            display: inline-block;
+            margin: 0;
+        }
+
+        .site-footer {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Error Messages */
+        .error-message {
+            background: rgba(255, 59, 48, 0.1);
+            border: 1px solid var(--danger);
+            border-radius: 8px;
+            padding: 16px;
+            color: var(--danger);
+            font-weight: 500;
+            margin-top: 16px;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .success-message {
+            background: rgba(52, 199, 89, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 8px;
+            padding: 16px;
+            color: var(--success);
+            font-weight: 500;
+            margin-top: 16px;
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <!-- Back to Hub Button -->
+    <div style="position: fixed; top: 20px; left: 20px; z-index: 9999;">
+        <button onclick="window.location.href='index.html'" style="
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        " onmouseover="this.style.background='var(--accent-hover)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='var(--accent)'; this.style.transform='translateY(0)'">
+            <span>←</span> กลับหน้าหลัก
+        </button>
+    </div>
+    
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>NCR Data Analysis</h1>
+            <p>ระบบวิเคราะห์ข้อมูลสำหรับการจำแนกและสรุปกลุ่มปัญหาคุณภาพ</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <h2 class="upload-title">อัปโหลดไฟล์ข้อมูล NCR</h2>
+            <p class="upload-description">
+                รองรับไฟล์ Excel (.xlsx, .xls) 
+            </p>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📂</div>
+                <div class="upload-text">คลิกหรือลากไฟล์มาที่นี่</div>
+                <div class="upload-subtext">รองรับไฟล์ .xlsx, .xls, .csv (ขนาดไม่เกิน 10MB)</div>
+            </div>
+            
+            <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls,.csv" multiple>
+            
+            <div class="file-info" id="fileInfo">
+                <div class="file-name" id="fileName"></div>
+                <div class="file-size" id="fileSize"></div>
+            </div>
+            
+            <button class="analyze-button" id="analyzeButton" disabled>
+                เริ่มวิเคราะห์ข้อมูล
+            </button>
+            
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+        </div>
+
+        <!-- Progress Modal -->
+        <div class="progress-modal" id="progressModal">
+            <div class="progress-content">
+                <div class="spinner"></div>
+                <div class="progress-info" id="progressInfo">
+                    <strong>กำลังประมวลผลข้อมูล...</strong>
+                    <p>กรุณารอสักครู่ ระบบกำลังวิเคราะห์ข้อมูล NCR</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <!-- Results Header -->
+            <div class="results-header">
+                <h2 class="results-title">ผลการวิเคราะห์ข้อมูล NCR</h2>
+                <div class="results-summary">
+                    <div class="summary-card customers">
+                        <div class="summary-value" id="totalCustomers">0</div>
+                        <div class="summary-label">จำนวนลูกค้าทั้งหมด</div>
+                    </div>
+                    <div class="summary-card brands">
+                        <div class="summary-value" id="totalBrands">0</div>
+                        <div class="summary-label">จำนวนตราสินค้า</div>
+                    </div>
+                    <div class="summary-card defects">
+                        <div class="summary-value" id="totalDefectTypes">0</div>
+                        <div class="summary-label">ประเภทปัญหาที่พบ</div>
+                    </div>
+                    <div class="summary-card total">
+                        <div class="summary-value" id="totalDefects">0</div>
+                        <div class="summary-label">ยอดของเสียรวม (ใบ)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs-container">
+                <div class="tabs">
+                    <button class="tab active" data-tab="overview">ภาพรวมโดยสรุป</button>
+                    <button class="tab" data-tab="defect-groups">การจัดกลุ่มประเด็นปัญหา</button>
+                    <button class="tab" data-tab="customers">การจำแนกข้อมูลตามรายลูกค้า</button>
+                    <button class="tab" data-tab="brands">การวิเคราะห์ข้อมูลรายตราสินค้า</button>
+                    <button class="tab" data-tab="detailed">รายละเอียดการวิเคราะห์</button>
+                </div>
+
+                <!-- Overview Tab -->
+                <div class="tab-content active" id="overview">
+                    <div class="charts-section">
+                        <div class="chart-container">
+                            <h3 class="chart-title">กลุ่มปัญหาที่พบ</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="defectGroupsChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <h3 class="chart-title">การกระจายของปัญหาแยกตามรายลูกค้า</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="customerDistributionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Defect Groups Tab -->
+                <div class="tab-content" id="defect-groups">
+                    <div class="chart-container">
+                        <h3 class="chart-title">รายละเอียดกลุ่มปัญหาทั้งหมด</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="allDefectGroupsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customers Tab -->
+                <div class="tab-content" id="customers">
+                    <div class="chart-container">
+                        <h3 class="chart-title">ยอดของเสียตามรายลูกค้า</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="customerDefectsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Brands Tab -->
+                <div class="tab-content" id="brands">
+                    <div class="chart-container">
+                        <h3 class="chart-title">ยอดของเสียตามตราสินค้า (Top 15)</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="brandDefectsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Tab -->
+                <div class="tab-content" id="detailed">
+                    <div class="table-section">
+                        <h3 class="table-title">รายละเอียดข้อมูลทั้งหมด</h3>
+                        <div class="table-controls">
+                            <div class="table-controls-row">
+                                <input type="text" id="searchInput" class="search-box" placeholder="ค้นหาข้อมูล...">
+                                <button class="export-button" id="exportButton">
+                                     📁 ส่งออกข้อมูล Excel
+                                </button>
+                            </div>
+                            <div class="filter-section">
+                                <span class="filter-label"> 🔍︎ กรองข้อมูล:</span>
+                                <div class="filter-group">
+                                    <label for="filterCustomer">ลูกค้า:</label>
+                                    <select id="filterCustomer" class="filter-select">
+                                        <option value="">ทั้งหมด</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="filterBrand">ตราสินค้า:</label>
+                                    <select id="filterBrand" class="filter-select">
+                                        <option value="">ทั้งหมด</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="filterDefectGroup">หมวดหมู่ปัญหา:</label>
+                                    <select id="filterDefectGroup" class="filter-select">
+                                        <option value="">ทั้งหมด</option>
+                                    </select>
+                                </div>
+                                <button class="clear-filters-btn" id="clearFiltersBtn">
+                                    ล้างตัวกรอง
+                                </button>
+                                <span class="filter-count" id="filterCount"></span>
+                            </div>
+                        </div>
+                        <div style="max-height: 600px; overflow-y: auto;">
+                            <table class="data-table" id="dataTable">
+                                <thead>
+                                    <tr>
+                                        <th>ลำดับ</th>
+                                        <th>ชื่อลูกค้า</th>
+                                        <th>ตราสินค้า</th>
+                                        <th>หมวดหมู่ปัญหา</th>
+                                        <th>ยอดเสียรวม (ใบ)</th>
+                                        <th>จำนวนครั้งที่พบ</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal สำหรับแสดงรายละเอียด -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">รายละเอียดข้อมูล</h3>
+                <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-summary">
+                    <div style="font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 10px;">
+                        📰 สรุปข้อมูล
+                    </div>
+                    <div class="modal-summary-grid" id="modalSummaryGrid">
+                        <!-- Summary items will be inserted here -->
+                    </div>
+                </div>
+                
+                <div style="font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 15px;">
+                    🔗 รายละเอียดแต่ละครั้งที่พบปัญหา
+                </div>
+                <div class="detail-list" id="detailList">
+                    <!-- Detail items will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let uploadedData = [];
+        let processedData = [];
+        let rawData = []; // เก็บข้อมูลต้นฉบับทั้งหมด
+        let charts = {};
+
+        // DEFECT_RULES - กลุ่มปัญหาและคำสำคัญ
+        const DEFECT_RULES = {
+            "1. สี": /สีหาย|เปื้อนสี|สีอ่อน|สีเข้ม|สีลาก|สีลงไม่เต็ม|สีไม่เท่ากัน|สีเปื่อน/i,
+            "2. รอยตำหนิพิเศษจากกระบวนการ": /รอยฟ้าผ่า|รอยพยาธี|รอยเส้นยาว|รอยขีดข่วน/i,
+            "3. พิมพ์เหลื่อมและอาร์ตเวิร์ก": /บล็อกเลื่อน|บล็อคเลื่อน|ตัวหนังสือหาย|พิมพ์ไม่ชัด|ไม่ตรงมาร์ค|อาร์ตเวิร์ก/i,
+            "4. โครงสร้างผ้าและวัสดุ": /ผ้าพับ|ผ้าโย้|ด้ายแตก|ผ้าเป็นรู|ผ้าเป็นรอย|ผ้าเสีย/i,
+            "5. อุปกรณ์และเครื่องจักร": /ฟิล์มพันลูกกลิ้ง|รอยเส้นเทป|ลายอัด|ลูกกลิ้งเป็นรอย/i,
+            "6. สิ่งปนเปื้อน": /แมลง|ฝุ่น|น้ำมัน|สิ่งแปลกปลอม/i,
+            "7. ม้วนและงานหลังพิมพ์": /ม้วนย่น|ม้วนหลวม|ตัดเบี้ยว|ขอบไม่เรียบ/i,
+            "8. เทคนิค/ห้องแล็บ": /Tenacity|Elongation|Denier|ไม่ได้มาตรฐาน|ไม่ผ่านเกณฑ์/i,
+            "9. Setup และบุคคล": /ขึ้นผ้าผิด|สีผิด|บล็อกผิด|บล็อคผิด|กลับด้าน/i,
+            "10. ฉลากและข้อมูล": /ป้ายผิด|Lot ไม่ตรง|ชื่อลูกค้าผิด|รหัสผิด/i,
+            "11. ขนส่งและจัดเก็บ": /งานตีกลับ|ม้วนกระแทก|แจ้งขนส่ง|พาเลทชำรุด/i
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeUpload();
+            initializeTabs();
+        });
+
+        function initializeUpload() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const analyzeButton = document.getElementById('analyzeButton');
+
+            // Click to upload
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
+            });
+
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+
+            // Analyze button
+            analyzeButton.addEventListener('click', processData);
+        }
+
+        function initializeTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetTab = tab.dataset.tab;
+
+                    // Remove active class from all tabs and contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    contents.forEach(c => c.classList.remove('active'));
+
+                    // Add active class to clicked tab and corresponding content
+                    tab.classList.add('active');
+                    document.getElementById(targetTab).classList.add('active');
+                });
+            });
+        }
+
+        function handleFiles(files) {
+            if (files.length === 0) return;
+
+            const file = files[0];
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const analyzeButton = document.getElementById('analyzeButton');
+            const errorMessage = document.getElementById('errorMessage');
+
+            // Validate file - ปรับปรุงการตรวจสอบให้ยืดหยุ่นขึ้น
+            const validTypes = ['.xlsx', '.xls', '.csv'];
+            const fileName_lower = file.name.toLowerCase();
+            const isValidFile = validTypes.some(type => fileName_lower.endsWith(type));
+            
+            console.log('File name:', file.name);
+            console.log('File type:', file.type);
+            console.log('File size:', file.size);
+            
+            if (!isValidFile) {
+                showError(`ไฟล์ "${file.name}" ไม่ถูกต้อง\nรองรับเฉพาะไฟล์ .xlsx, .xls, .csv เท่านั้น`);
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                showError('ขนาดไฟล์ใหญ่เกินไป (เกิน 10MB)');
+                return;
+            }
+            
+            if (file.size === 0) {
+                showError('ไฟล์ว่างเปล่า กรุณาเลือกไฟล์ที่มีข้อมูล');
+                return;
+            }
+
+            // Display file info
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.style.display = 'block';
+            analyzeButton.disabled = false;
+            hideError();
+            
+            showSuccess(`เลือกไฟล์ "${file.name}" เรียบร้อยแล้ว`);
+
+            // Store file for processing
+            uploadedData = [file];
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.innerHTML = message.replace(/\n/g, '<br>');
+            errorMessage.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successMessage = document.getElementById('successMessage');
+            successMessage.innerHTML = message;
+            successMessage.style.display = 'block';
+        }
+
+        function showLoading() {
+            const modal = document.getElementById('progressModal');
+            const progressInfo = document.getElementById('progressInfo');
+            modal.classList.add('active');
+            progressInfo.innerHTML = `
+                <strong>กำลังประมวลผลข้อมูล...</strong>
+                <p>กรุณารอสักครู่ ระบบกำลังวิเคราะห์ข้อมูล NCR</p>
+            `;
+            document.getElementById('resultsSection').style.display = 'none';
+        }
+
+        function hideLoading() {
+            const modal = document.getElementById('progressModal');
+            modal.classList.remove('active');
+        }
+
+        async function processData() {
+            if (uploadedData.length === 0) {
+                showError('กรุณาเลือกไฟล์ก่อน');
+                return;
+            }
+
+            const startTime = Date.now();
+            showLoading();
+            hideError();
+
+            try {
+                const file = uploadedData[0];
+                let data;
+
+                if (file.name.endsWith('.csv')) {
+                    data = await readCSVFile(file);
+                } else {
+                    data = await readExcelFile(file);
+                }
+                
+                // แสดงข้อมูล debug
+                const debugInfo = `
+                    <strong>📄 ข้อมูลไฟล์:</strong><br>
+                    - จำนวนแถว: ${data.length}<br>
+                    - คอลัมน์ที่พบ: ${Object.keys(data[0] || {}).join(', ')}<br>
+                    <br>
+                    <strong>🔍 กำลังค้นหาคอลัมน์ที่ต้องการ...</strong>
+                `;
+                showSuccess(debugInfo);
+
+                processedData = analyzeNCRData(data);
+                displayResults();
+                showSuccess(`🟢 ประมวลผลข้อมูลสำเร็จ พบข้อมูล ${processedData.length} รายการ`);
+                
+                // คำนวณเวลาที่เหลือเพื่อให้ animation แสดงอย่างน้อย 2.5 วินาที
+                const elapsedTime = Date.now() - startTime;
+                const minDisplayTime = 2500; // 2.5 วินาที
+                const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+                
+                // รอเวลาที่เหลือก่อนปิด modal
+                await new Promise(resolve => setTimeout(resolve, remainingTime));
+                
+            } catch (error) {
+                console.error('Error processing data:', error);
+                showError('เกิดข้อผิดพลาดในการประมวลผลข้อมูล: ' + error.message);
+                
+                // รอให้ครบ 2.5 วินาทีแม้จะเกิดข้อผิดพลาด
+                const elapsedTime = Date.now() - startTime;
+                const minDisplayTime = 2500;
+                const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+                await new Promise(resolve => setTimeout(resolve, remainingTime));
+            }
+
+            hideLoading();
+        }
+
+        function readCSVFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const text = e.target.result;
+                        const lines = text.split('\n');
+                        if (lines.length < 2) {
+                            reject(new Error('ไฟล์ CSV ไม่มีข้อมูล'));
+                            return;
+                        }
+
+                        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                        const data = [];
+
+                        for (let i = 1; i < lines.length; i++) {
+                            if (lines[i].trim() === '') continue;
+                            
+                            const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                            const row = {};
+                            headers.forEach((header, index) => {
+                                row[header] = values[index] || '';
+                            });
+                            data.push(row);
+                        }
+
+                        resolve(data);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์ CSV ได้'));
+                reader.readAsText(file, 'utf-8');
+            });
+        }
+
+        function readExcelFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        console.log('Reading Excel file:', file.name);
+                        const data = e.target.result;
+                        const workbook = XLSX.read(data, { 
+                            type: 'binary',
+                            cellDates: true,
+                            cellNF: false,
+                            cellText: false,
+                            raw: false
+                        });
+                        
+                        console.log('Workbook sheets:', workbook.SheetNames);
+                        
+                        if (workbook.SheetNames.length === 0) {
+                            reject(new Error('ไฟล์ Excel ไม่มี Sheet'));
+                            return;
+                        }
+                        
+                        // ลองหา Sheet "NC รวม" ก่อน
+                        let sheetName = workbook.SheetNames.find(name => 
+                            name.includes('NC') && name.includes('รวม')
+                        );
+                        
+                        // ถ้าไม่เจอ ใช้ sheet แรก
+                        if (!sheetName) {
+                            sheetName = workbook.SheetNames[0];
+                            console.log('ไม่พบ Sheet "NC รวม", ใช้ sheet:', sheetName);
+                        } else {
+                            console.log('พบ Sheet:', sheetName);
+                        }
+                        
+                        const worksheet = workbook.Sheets[sheetName];
+                        
+                        // ใช้ sheet_to_json แบบรักษา column reference 
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                            defval: '',
+                            blankrows: false,
+                            raw: false
+                        });
+                        
+                        console.log('Raw data rows:', jsonData.length);
+                        
+                        if (jsonData.length === 0) {
+                            reject(new Error('ไฟล์ Excel ไม่มีข้อมูลที่ใช้งานได้'));
+                            return;
+                        }
+                        
+                        // แสดง column keys ที่พบ
+                        console.log('Available columns:', Object.keys(jsonData[0]));
+                        console.log('First few records:', jsonData.slice(0, 3));
+
+                        resolve(jsonData);
+                    } catch (error) {
+                        console.error('Excel reading error:', error);
+                        reject(new Error(`ไม่สามารถอ่านไฟล์ Excel ได้: ${error.message}`));
+                    }
+                };
+                reader.onerror = (error) => {
+                    console.error('FileReader error:', error);
+                    reject(new Error('ไม่สามารถอ่านไฟล์ Excel ได้ - ไฟล์อาจเสียหาย'));
+                };
+                reader.readAsBinaryString(file);
+            });
+        }
+
+        function classifyDefect(text) {
+            if (!text || text.toString().trim() === '') {
+                return "ไม่ระบุสาเหตุ";
+            }
+
+            const textStr = text.toString().trim();
+
+            // วนลูปเช็คตาม DEFECT_RULES
+            for (const [groupName, pattern] of Object.entries(DEFECT_RULES)) {
+                if (pattern.test(textStr)) {
+                    return groupName;
+                }
+            }
+
+            return "อื่นๆ / พิมพ์เสียทั่วไป";
+        }
+
+        // ฟังก์ชันค้นหาคอลัมน์ที่เหมาะสม
+        function findBestColumn(availableColumns, keywords, columnHints = []) {
+            // 1. ลองหาจากตำแหน่งคอลัมน์ก่อน (Column Index/Letter)
+            if (columnHints.length > 0) {
+                const [columnLetter, columnIndex] = columnHints;
+                
+                // หาจาก __EMPTY_X (Excel column pattern)
+                // Column A=0, B=1, C=2... แต่ __EMPTY_ เริ่มจาก __EMPTY_1 สำหรับ Column B (index 1)
+                const emptyPattern = `__EMPTY_${columnIndex - 2}`; // แก้ไข: columnIndex - 2 เพราะ __EMPTY_ เริ่มจาก B(1)
+                const foundEmpty = availableColumns.find(col => col === emptyPattern);
+                if (foundEmpty) {
+                    console.log(`Found column by index pattern: ${foundEmpty} for ${columnLetter} (index ${columnIndex})`);
+                    return foundEmpty;
+                }
+                
+                // หาจาก Column Letter โดยตรง
+                const foundLetter = availableColumns.find(col => col === columnLetter);
+                if (foundLetter) {
+                    console.log(`Found column by letter: ${foundLetter}`);
+                    return foundLetter;
+                }
+            }
+            
+            // 2. ลองหาจาก keywords แบบ exact match
+            for (const keyword of keywords) {
+                const exactMatch = availableColumns.find(col => 
+                    col && col.toString().trim() === keyword.trim()
+                );
+                if (exactMatch) {
+                    console.log(`Found exact match: ${exactMatch} for keyword: ${keyword}`);
+                    return exactMatch;
+                }
+            }
+            
+            // 3. ลองหาจาก keywords แบบ partial match
+            for (const keyword of keywords) {
+                const partialMatch = availableColumns.find(col => 
+                    col && (col.toLowerCase().includes(keyword.toLowerCase()) || 
+                           keyword.toLowerCase().includes(col.toLowerCase()))
+                );
+                if (partialMatch) {
+                    console.log(`Found partial match: ${partialMatch} for keyword: ${keyword}`);
+                    return partialMatch;
+                }
+            }
+            
+            // 4. ถ้าไม่เจอ ให้คืน keyword แรก
+            console.log(`No match found for keywords: ${keywords.join(', ')}`);
+            return keywords[0];
+        }
+
+        function analyzeNCRData(inputData) {
+            console.log('Analyzing NCR data:', inputData.length, 'records');
+            
+            if (!inputData || inputData.length === 0) {
+                throw new Error('ไม่มีข้อมูลให้วิเคราะห์');
+            }
+            
+            // ตรวจสอบคอลัมน์ที่จำเป็น
+            const requiredColumns = ['ลูกค้า', 'ตรา', 'ผลการตรวจสอบ1', 'จำนวน'];
+            const availableColumns = Object.keys(inputData[0] || {});
+            
+            console.log('Available columns:', availableColumns);
+            
+            // การ mapping คอลัมน์สำหรับ NCR-PD3.xlsx
+            // H (7) = ตรา, I (8) = ลูกค้า, N (13) = ผลการตรวจสอบ1, R (17) = จำนวน
+            const columnMapping = {
+                'ลูกค้า': findBestColumn(availableColumns, ['ลูกค้า', 'customer', 'client'], ['I', 8]),
+                'ตรา': findBestColumn(availableColumns, ['ตรา', 'brand', 'trademark'], ['H', 7]),
+                'ผลการตรวจสอบ1': findBestColumn(availableColumns, ['ผลการตรวจสอบ', 'ผลตรวจ', 'defect', 'problem', 'nc', 'issue'], ['N', 13]),
+                'จำนวน': findBestColumn(availableColumns, ['จำนวน', 'qty', 'quantity', 'amount'], ['R', 17])
+            };
+            
+            console.log('Column mapping:', columnMapping);
+            
+            // ตรวจสอบว่าพบคอลัมน์ที่จำเป็นหรือไม่
+            const missingColumns = requiredColumns.filter(col => {
+                const mappedCol = columnMapping[col];
+                return !mappedCol || !availableColumns.includes(mappedCol);
+            });
+            
+            if (missingColumns.length > 0) {
+                console.error('Missing columns:', missingColumns);
+                console.error('Column mapping result:', columnMapping);
+                console.error('Available columns:', availableColumns);
+                
+                const errorMsg = `ไม่พบคอลัมน์ที่ต้องการ: ${missingColumns.join(', ')}\n\n` +
+                    `คอลัมน์ที่มีในไฟล์:\n${availableColumns.map((col, i) => `${i+1}. "${col}"`).join('\n')}\n\n` +
+                    `กรุณาตรวจสอบว่าไฟล์มีคอลัมน์ที่ชื่อตรงกับ: ลูกค้า, ตรา, ผลการตรวจสอบ1, จำนวน\n` +
+                    `หรือมีคำว่า customer, brand, defect, quantity`;
+                throw new Error(errorMsg);
+            }
+
+            // ประมวลผลข้อมูล
+            const processed = inputData.map((row, index) => {
+                const customer = (row[columnMapping['ลูกค้า']] || '').toString().trim();
+                const brand = (row[columnMapping['ตรา']] || '').toString().trim();
+                const defectDescription = (row[columnMapping['ผลการตรวจสอบ1']] || '').toString().trim();
+                
+                // อ่านค่าจำนวนจากคอลัมน์ที่ map ไว้
+                let quantity = 0;
+                const qtyValue = row[columnMapping['จำนวน']];
+                if (qtyValue !== undefined && qtyValue !== null && qtyValue !== '') {
+                    if (typeof qtyValue === 'number') {
+                        quantity = qtyValue;
+                    } else {
+                        quantity = parseFloat(qtyValue.toString().replace(/[^0-9.-]/g, '')) || 0;
+                    }
+                }
+
+                return {
+                    customer,
+                    brand,
+                    defectDescription,
+                    quantity,
+                    defectGroup: classifyDefect(defectDescription),
+                    rowIndex: index + 1
+                };
+            }).filter(row => {
+                // กรองเฉพาะแถวที่มีข้อมูลสำคัญครบถ้วน (ลูกค้า และ ตรา)
+                const hasCustomer = row.customer && row.customer.length > 0;
+                const hasBrand = row.brand && row.brand.length > 0;
+                const isValid = hasCustomer && hasBrand;
+                
+                if (!isValid && (row.customer || row.brand || row.defectDescription)) {
+                    // แสดง warning เฉพาะแถวที่มีข้อมูลบางส่วนแต่ไม่ครบ
+                    console.warn(`Row ${row.rowIndex}: Incomplete data - Customer: "${row.customer}", Brand: "${row.brand}"`);
+                }
+                
+                return isValid;
+            });
+            
+            // เก็บข้อมูลต้นฉบับไว้ใน global variable (ใช้ window. เพื่อให้แน่ใจว่าเป็น global)
+            window.rawData = processed;
+            
+            console.log('Processed data:', processed.length, 'valid records');
+            console.log('Saved to global rawData:', window.rawData.length, 'records');
+
+            if (processed.length === 0) {
+                throw new Error('ไม่พบข้อมูลที่ถูกต้อง กรุณาตรวจสอบว่าไฟล์มีคอลัมน์: ลูกค้า, ตรา, ผลการตรวจสอบ1, จำนวน');
+            }
+
+            // จัดกลุ่มข้อมูล
+            const summary = {};
+            processed.forEach(row => {
+                const key = `${row.customer}|${row.brand}|${row.defectGroup}`;
+                if (!summary[key]) {
+                    summary[key] = {
+                        customer: row.customer,
+                        brand: row.brand,
+                        defectGroup: row.defectGroup,
+                        totalQuantity: 0,
+                        occurrences: 0
+                    };
+                }
+                summary[key].totalQuantity += row.quantity;
+                summary[key].occurrences += 1;
+            });
+
+            // แปลงเป็น array และเรียงลำดับ
+            const result = Object.values(summary)
+                .sort((a, b) => b.totalQuantity - a.totalQuantity);
+                
+            console.log('Summary result:', result.length, 'grouped records');
+            return result;
+        }
+
+        function displayResults() {
+            updateSummaryCards();
+            createCharts();
+            populateDataTable();
+            setupTableFeatures();
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        function updateSummaryCards() {
+            const customers = new Set(processedData.map(d => d.customer)).size;
+            const brands = new Set(processedData.map(d => d.brand)).size;
+            const defectTypes = new Set(processedData.map(d => d.defectGroup)).size;
+            const totalDefects = processedData.reduce((sum, d) => sum + d.totalQuantity, 0);
+
+            document.getElementById('totalCustomers').textContent = customers.toLocaleString();
+            document.getElementById('totalBrands').textContent = brands.toLocaleString();
+            document.getElementById('totalDefectTypes').textContent = defectTypes.toLocaleString();
+            document.getElementById('totalDefects').textContent = totalDefects.toLocaleString();
+        }
+
+        function destroyAllCharts() {
+            Object.keys(charts).forEach(key => {
+                if (charts[key]) {
+                    charts[key].destroy();
+                    charts[key] = null;
+                }
+            });
+        }
+
+        function createCharts() {
+            destroyAllCharts(); // ทำลาย chart เก่าทั้งหมดก่อน
+            createDefectGroupsChart();
+            createCustomerDistributionChart();
+            createAllDefectGroupsChart();
+            createCustomerDefectsChart();
+            createBrandDefectsChart();
+        }
+
+        function createDefectGroupsChart() {
+            const canvas = document.getElementById('defectGroupsChart');
+            if (charts.defectGroups) {
+                charts.defectGroups.destroy();
+                charts.defectGroups = null;
+            }
+
+            // จัดกลุ่มตามประเภทปัญหา
+            const groupData = {};
+            processedData.forEach(item => {
+                groupData[item.defectGroup] = (groupData[item.defectGroup] || 0) + item.totalQuantity;
+            });
+
+            // เรียงลำดับและเอา Top 10
+            const sortedGroups = Object.entries(groupData)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10);
+
+            const labels = sortedGroups.map(([label]) => label);
+            const values = sortedGroups.map(([, value]) => value);
+
+            charts.defectGroups = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ยอดของเสีย (ใบ)',
+                        data: values,
+                        backgroundColor: [
+                            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA726',
+                            '#AB47BC', '#26A69A', '#EF5350', '#29B6F6',
+                            '#66BB6A', '#FFCA28'
+                        ],
+                        borderRadius: 6,
+                        barPercentage: 0.8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 50,
+                            right: 20,
+                            bottom: 10,
+                            left: 10
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            offset: 8,
+                            formatter: (value) => value.toLocaleString(),
+                            font: {
+                                weight: 'bold',
+                                size: 12
+                            },
+                            color: '#333'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grace: '5%',
+                            ticks: {
+                                padding: 8,
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                },
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                padding: 8,
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        function createCustomerDistributionChart() {
+            const canvas = document.getElementById('customerDistributionChart');
+            if (charts.customerDistribution) {
+                charts.customerDistribution.destroy();
+                charts.customerDistribution = null;
+            }
+
+            // จัดกลุ่มตามลูกค้า
+            const customerData = {};
+            processedData.forEach(item => {
+                customerData[item.customer] = (customerData[item.customer] || 0) + item.totalQuantity;
+            });
+
+            // เรียงลำดับและเอา Top 8
+            const sortedCustomers = Object.entries(customerData)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 8);
+
+            const labels = sortedCustomers.map(([label]) => label);
+            const values = sortedCustomers.map(([, value]) => value);
+
+            charts.customerDistribution = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: [
+                            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA726',
+                            '#AB47BC', '#26A69A', '#EF5350', '#29B6F6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        datalabels: {
+                            formatter: (value, context) => {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return percentage + '%';
+                            },
+                            color: 'white',
+                            font: {
+                                weight: 'bold',
+                                size: 12
+                            }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        function createAllDefectGroupsChart() {
+            const canvas = document.getElementById('allDefectGroupsChart');
+            if (charts.allDefectGroups) {
+                charts.allDefectGroups.destroy();
+                charts.allDefectGroups = null;
+            }
+
+            // จัดกลุ่มตามประเภทปัญหา (ทั้งหมด)
+            const groupData = {};
+            processedData.forEach(item => {
+                groupData[item.defectGroup] = (groupData[item.defectGroup] || 0) + item.totalQuantity;
+            });
+
+            // เรียงลำดับตามมูลค่า
+            const sortedData = Object.entries(groupData)
+                .sort(([,a], [,b]) => b - a);
+            
+            const labels = sortedData.map(([label]) => label);
+            const values = sortedData.map(([, value]) => value);
+            
+            // สร้างสีที่หลากหลาย
+            const colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA726', '#AB47BC',
+                '#26A69A', '#EF5350', '#29B6F6', '#66BB6A', '#FFCA28',
+                '#EC407A', '#7E57C2'
+            ];
+            const backgroundColors = values.map((_, i) => colors[i % colors.length]);
+
+            charts.allDefectGroups = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ยอดของเสีย (ใบ)',
+                        data: values,
+                        backgroundColor: backgroundColors,
+                        borderRadius: 6,
+                        barPercentage: 0.75
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 10,
+                            right: 80,
+                            bottom: 10,
+                            left: 10
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'right',
+                            offset: 8,
+                            formatter: (value) => value.toLocaleString(),
+                            font: {
+                                weight: 'bold',
+                                size: 11
+                            },
+                            color: '#333'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                padding: 8,
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                },
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                padding: 8,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        function createCustomerDefectsChart() {
+            const canvas = document.getElementById('customerDefectsChart');
+            if (charts.customerDefects) {
+                charts.customerDefects.destroy();
+                charts.customerDefects = null;
+            }
+
+            // จัดกลุ่มตามลูกค้า
+            const customerData = {};
+            processedData.forEach(item => {
+                customerData[item.customer] = (customerData[item.customer] || 0) + item.totalQuantity;
+            });
+
+            const sortedCustomers = Object.entries(customerData)
+                .sort(([,a], [,b]) => b - a);
+            
+            // แสดงเฉพาะ Top 15 และรวมที่เหลือเป็น "ลูกค้าอื่นๆ"
+            const topN = 15;
+            const topCustomers = sortedCustomers.slice(0, topN);
+            const otherCustomers = sortedCustomers.slice(topN);
+            
+            // คำนวณยอดรวมของลูกค้าที่เหลือ
+            const othersTotal = otherCustomers.reduce((sum, [, value]) => sum + value, 0);
+            const othersCount = otherCustomers.length;
+
+            const labels = topCustomers.map(([label]) => label);
+            const values = topCustomers.map(([, value]) => value);
+            
+            // สร้าง Summary Info
+            const totalCustomers = sortedCustomers.length;
+            const totalDefects = sortedCustomers.reduce((sum, [, value]) => sum + value, 0);
+            const topPercentage = ((values.reduce((a, b) => a + b, 0) / totalDefects) * 100).toFixed(1);
+            
+            // สร้าง summary HTML
+            const summaryHTML = `
+                <div class="customer-summary">
+                    <div class="summary-item">
+                        <div class="value">${topN}</div>
+                        <div class="label">ลูกค้าที่มีของเสียมากที่สุดตามลำดับ
+                        </div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value">${topPercentage}%</div>
+                        <div class="label">สัดส่วนของเสีย (Top ${topN})</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value">${othersCount}</div>
+                        <div class="label">ลูกค้าอื่นๆ</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value">${othersTotal.toLocaleString()}</div>
+                        <div class="label">ยอดเสียของลูกค้าอื่นๆ (ใบ)</div>
+                    </div>
+                </div>
+            `;
+            
+            // เพิ่ม summary ลงในหน้าเว็บ
+            const customersTab = document.getElementById('customers');
+            let summaryDiv = customersTab.querySelector('.customer-summary-container');
+            if (!summaryDiv) {
+                summaryDiv = document.createElement('div');
+                summaryDiv.className = 'customer-summary-container';
+                customersTab.querySelector('.chart-container').insertAdjacentElement('afterend', summaryDiv);
+            }
+            summaryDiv.innerHTML = summaryHTML;
+            
+            // สร้างสี gradient แบบมืออาชีพ
+            const colorPalette = [
+                { bg: '#FF6B6B', border: '#E74C3C' },
+                { bg: '#4ECDC4', border: '#16A085' },
+                { bg: '#45B7D1', border: '#3498DB' },
+                { bg: '#FFA726', border: '#F57C00' },
+                { bg: '#AB47BC', border: '#8E24AA' },
+                { bg: '#26A69A', border: '#00897B' },
+                { bg: '#EF5350', border: '#D32F2F' },
+                { bg: '#29B6F6', border: '#0288D1' },
+                { bg: '#66BB6A', border: '#43A047' },
+                { bg: '#FFCA28', border: '#FFB300' },
+                { bg: '#EC407A', border: '#C2185B' },
+                { bg: '#7E57C2', border: '#5E35B1' },
+                { bg: '#5C6BC0', border: '#3949AB' },
+                { bg: '#42A5F5', border: '#1976D2' },
+                { bg: '#26C6DA', border: '#0097A7' }
+            ];
+            
+            const backgroundColors = values.map((_, i) => colorPalette[i % colorPalette.length].bg);
+            const borderColors = values.map((_, i) => colorPalette[i % colorPalette.length].border);
+
+            charts.customerDefects = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ยอดของเสีย (ใบ)',
+                        data: values,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        barPercentage: 0.8,
+                        categoryPercentage: 0.9
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // ทำให้เป็นแท่งแนวนอน
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    layout: {
+                        padding: {
+                            top: 20,
+                            right: 80,
+                            bottom: 20,
+                            left: 15
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: `Top ${topN} ลูกค้าที่มีสัดส่วนของเสียสูง`,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                top: 10,
+                                bottom: 20
+                            },
+                            color: '#333'
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                            padding: 14,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            callbacks: {
+                                title: function(context) {
+                                    return context[0].label;
+                                },
+                                label: function(context) {
+                                    const value = context.parsed.x;
+                                    const percentage = ((value / totalDefects) * 100).toFixed(1);
+                                    return [
+                                        `ยอดของเสีย: ${value.toLocaleString()} ใบ`,
+                                        `สัดส่วน: ${percentage}%`
+                                    ];
+                                }
+                            }
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'right',
+                            offset: 8,
+                            formatter: (value) => {
+                                if (value >= 1000) {
+                                    return (value / 1000).toFixed(1) + 'K';
+                                }
+                                return value.toLocaleString();
+                            },
+                            font: {
+                                weight: 'bold',
+                                size: 12
+                            },
+                            color: function(context) {
+                                return colorPalette[context.dataIndex % colorPalette.length].border;
+                            },
+                            backgroundColor: function(context) {
+                                const color = colorPalette[context.dataIndex % colorPalette.length].bg;
+                                return color + '25';
+                            },
+                            borderRadius: 4,
+                            padding: {
+                                top: 4,
+                                bottom: 4,
+                                left: 8,
+                                right: 8
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: false,
+                                lineWidth: 1
+                            },
+                            border: {
+                                display: false
+                            },
+                            ticks: {
+                                padding: 10,
+                                callback: function(value) {
+                                    if (value >= 1000) {
+                                        return (value / 1000) + 'K';
+                                    }
+                                    return value.toLocaleString();
+                                },
+                                font: {
+                                    size: 11,
+                                    weight: '500'
+                                },
+                                color: '#666'
+                            },
+                            title: {
+                                display: true,
+                                text: 'ยอดของเสีย (ใบ)',
+                                font: {
+                                    size: 13,
+                                    weight: 'bold'
+                                },
+                                color: '#333',
+                                padding: { top: 10, bottom: 0 }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false,
+                                drawBorder: false
+                            },
+                            border: {
+                                display: false
+                            },
+                            ticks: {
+                                padding: 12,
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                },
+                                color: '#555',
+                                autoSkip: false,
+                                callback: function(value, index) {
+                                    const label = this.getLabelForValue(value);
+                                    // จำกัดความยาวของชื่อถ้ายาวเกินไป
+                                    if (label.length > 35) {
+                                        return label.substring(0, 32) + '...';
+                                    }
+                                    return label;
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'ลูกค้า',
+                                font: {
+                                    size: 13,
+                                    weight: 'bold'
+                                },
+                                color: '#333',
+                                padding: { top: 0, bottom: 10 }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1200,
+                        easing: 'easeInOutQuart'
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        function createBrandDefectsChart() {
+            const canvas = document.getElementById('brandDefectsChart');
+            if (charts.brandDefects) {
+                charts.brandDefects.destroy();
+                charts.brandDefects = null;
+            }
+
+            // จัดกลุ่มตามตรา
+            const brandData = {};
+            processedData.forEach(item => {
+                brandData[item.brand] = (brandData[item.brand] || 0) + item.totalQuantity;
+            });
+
+            // เรียงลำดับและเอา Top 15
+            const sortedBrands = Object.entries(brandData)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 15);
+
+            const labels = sortedBrands.map(([label]) => label);
+            const values = sortedBrands.map(([, value]) => value);
+            
+            // สร้างสีที่หลากหลายสำหรับแต่ละตรา
+            const colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA726', '#AB47BC',
+                '#26A69A', '#EF5350', '#29B6F6', '#66BB6A', '#FFCA28',
+                '#EC407A', '#7E57C2', '#5C6BC0', '#42A5F5', '#26C6DA'
+            ];
+            const backgroundColors = values.map((_, i) => colors[i % colors.length]);
+
+            charts.brandDefects = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'ยอดของเสีย (ใบ)',
+                        data: values,
+                        backgroundColor: backgroundColors,
+                        borderRadius: 6,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 30,
+                            right: 20,
+                            bottom: 10,
+                            left: 10
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            offset: 4,
+                            formatter: (value) => value.toLocaleString(),
+                            font: {
+                                weight: 'bold',
+                                size: 11
+                            },
+                            color: '#333'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                padding: 8,
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                },
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                padding: 8,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        function populateDataTable() {
+            const tbody = document.querySelector('#dataTable tbody');
+            tbody.innerHTML = '';
+
+            processedData.forEach((item, index) => {
+                const row = tbody.insertRow();
+                row.className = 'table-row-clickable';
+                row.style.cursor = 'pointer';
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${item.customer}</td>
+                    <td>${item.brand}</td>
+                    <td>${item.defectGroup}</td>
+                    <td style="text-align: right; font-weight: bold; color: #ff3b30;">
+                        ${item.totalQuantity.toLocaleString()}
+                    </td>
+                    <td style="text-align: center;">${item.occurrences}</td>
+                `;
+                
+                // เพิ่ม event listener สำหรับคลิกแถว
+                row.addEventListener('click', () => {
+                    showDetailModal(item);
+                });
+            });
+        }
+        
+        function showDetailModal(summaryItem) {
+            console.log('Opening modal for:', summaryItem);
+            console.log('Global rawData length:', window.rawData ? window.rawData.length : 0);
+            
+            // หาข้อมูลต้นฉบับทั้งหมดที่ตรงกับ customer, brand, defectGroup
+            const relatedData = window.rawData.filter(raw => 
+                raw.customer === summaryItem.customer &&
+                raw.brand === summaryItem.brand &&
+                raw.defectGroup === summaryItem.defectGroup
+            );
+            
+            console.log('Found related data:', relatedData.length, 'records');
+            
+            // Update modal title
+            document.getElementById('modalTitle').innerHTML = `
+                🟢  รายละเอียด: ${summaryItem.customer} - ${summaryItem.brand}
+            `;
+            
+            // Update summary
+            const summaryGrid = document.getElementById('modalSummaryGrid');
+            summaryGrid.innerHTML = `
+                <div class="modal-summary-item">
+                    <div class="label">ลูกค้า</div>
+                    <div class="value" style="font-size: 16px;">${summaryItem.customer}</div>
+                </div>
+                <div class="modal-summary-item">
+                    <div class="label">ตราสินค้า</div>
+                    <div class="value" style="font-size: 16px;">${summaryItem.brand}</div>
+                </div>
+                <div class="modal-summary-item">
+                    <div class="label">หมวดหมู่ปัญหา</div>
+                    <div class="value" style="font-size: 16px;">${summaryItem.defectGroup}</div>
+                </div>
+                <div class="modal-summary-item">
+                    <div class="label">ยอดเสียรวม</div>
+                    <div class="value">${summaryItem.totalQuantity.toLocaleString()} ใบ</div>
+                </div>
+                <div class="modal-summary-item">
+                    <div class="label">จำนวนครั้งที่พบ</div>
+                    <div class="value">${summaryItem.occurrences} ครั้ง</div>
+                </div>
+                <div class="modal-summary-item">
+                    <div class="label">เฉลี่ยต่อครั้ง</div>
+                    <div class="value">${(summaryItem.totalQuantity / summaryItem.occurrences).toFixed(1)} ใบ</div>
+                </div>
+            `;
+            
+            // Update detail list
+            const detailList = document.getElementById('detailList');
+            detailList.innerHTML = relatedData.map((item, index) => `
+                <div class="detail-item">
+                    <div class="detail-item-header">
+                        <div class="detail-item-number">${index + 1}</div>
+                        <div class="detail-item-qty">${item.quantity.toLocaleString()} ใบ</div>
+                    </div>
+                    <div class="detail-item-description">${item.defectDescription || 'ไม่มีรายละเอียด'}</div>
+                </div>
+            `).join('');
+            
+            // Show modal
+            document.getElementById('detailModal').classList.add('show');
+        }
+        
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('show');
+        }
+        
+        // Close modal when clicking outside
+        document.addEventListener('DOMContentLoaded', () => {
+            const modalOverlay = document.getElementById('detailModal');
+            if (modalOverlay) {
+                modalOverlay.addEventListener('click', (e) => {
+                    if (e.target === modalOverlay) {
+                        closeDetailModal();
+                    }
+                });
+            }
+        });
+        
+        // Close modal with ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeDetailModal();
+            }
+        });
+
+        function setupTableFeatures() {
+            // Populate filter dropdowns
+            populateFilterDropdowns();
+            
+            // Setup filter search functionality
+            setupFilterSearch();
+            
+            // Search functionality
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', applyFilters);
+
+            // Filter functionality
+            const filterCustomer = document.getElementById('filterCustomer');
+            const filterBrand = document.getElementById('filterBrand');
+            const filterDefectGroup = document.getElementById('filterDefectGroup');
+            
+            filterCustomer.addEventListener('change', applyFilters);
+            filterBrand.addEventListener('change', applyFilters);
+            filterDefectGroup.addEventListener('change', applyFilters);
+            
+            // Clear filters button
+            const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+            clearFiltersBtn.addEventListener('click', clearAllFilters);
+
+            // Export functionality
+            const exportButton = document.getElementById('exportButton');
+            exportButton.addEventListener('click', exportToExcel);
+            
+            // Initial filter count
+            updateFilterCount();
+        }
+        
+        function populateFilterDropdowns() {
+            // Get unique values for each filter
+            const customers = [...new Set(processedData.map(d => d.customer))].sort();
+            const brands = [...new Set(processedData.map(d => d.brand))].sort();
+            const defectGroups = [...new Set(processedData.map(d => d.defectGroup))].sort();
+            
+            // Populate customer filter
+            const filterCustomer = document.getElementById('filterCustomer');
+            filterCustomer.innerHTML = '<option value="">ทั้งหมด</option>';
+            filterCustomer.dataset.allOptions = JSON.stringify(customers);
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer;
+                option.textContent = customer;
+                filterCustomer.appendChild(option);
+            });
+            
+            // Populate brand filter
+            const filterBrand = document.getElementById('filterBrand');
+            filterBrand.innerHTML = '<option value="">ทั้งหมด</option>';
+            filterBrand.dataset.allOptions = JSON.stringify(brands);
+            brands.forEach(brand => {
+                const option = document.createElement('option');
+                option.value = brand;
+                option.textContent = brand;
+                filterBrand.appendChild(option);
+            });
+            
+            // Populate defect group filter
+            const filterDefectGroup = document.getElementById('filterDefectGroup');
+            filterDefectGroup.innerHTML = '<option value="">ทั้งหมด</option>';
+            filterDefectGroup.dataset.allOptions = JSON.stringify(defectGroups);
+            defectGroups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group;
+                option.textContent = group;
+                filterDefectGroup.appendChild(option);
+            });
+        }
+
+        function setupFilterSearch() {
+            // Add search inputs above each dropdown
+            addSearchInputToFilter('filterCustomer', 'ค้นหาลูกค้า...');
+            addSearchInputToFilter('filterBrand', 'ค้นหาตราสินค้า...');
+            addSearchInputToFilter('filterDefectGroup', 'ค้นหาหมวดหมู่ปัญหา...');
+        }
+
+        function addSearchInputToFilter(selectId, placeholder) {
+            const select = document.getElementById(selectId);
+            const parent = select.parentElement;
+            
+            // Create wrapper div
+            const wrapper = document.createElement('div');
+            wrapper.className = 'filter-group-with-search';
+            
+            // Create search input
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.className = 'filter-search-input';
+            searchInput.placeholder = placeholder;
+            searchInput.id = selectId + 'Search';
+            
+            // Wrap select with new structure
+            parent.insertBefore(wrapper, select);
+            wrapper.appendChild(searchInput);
+            wrapper.appendChild(select);
+            
+            // Add search functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const allOptions = JSON.parse(select.dataset.allOptions || '[]');
+                const currentValue = select.value;
+                
+                // Clear and rebuild options
+                select.innerHTML = '<option value="">ทั้งหมด</option>';
+                
+                // Filter and add matching options
+                const filteredOptions = allOptions.filter(opt => 
+                    opt.toLowerCase().includes(searchTerm)
+                );
+                
+                filteredOptions.forEach(optValue => {
+                    const option = document.createElement('option');
+                    option.value = optValue;
+                    option.textContent = optValue;
+                    if (optValue === currentValue) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+                
+                // Show count of filtered items
+                if (searchTerm && filteredOptions.length > 0) {
+                    const countOption = document.createElement('option');
+                    countOption.disabled = true;
+                    countOption.textContent = `--- พบ ${filteredOptions.length} รายการ ---`;
+                    select.insertBefore(countOption, select.options[1]);
+                } else if (searchTerm && filteredOptions.length === 0) {
+                    const noResultOption = document.createElement('option');
+                    noResultOption.disabled = true;
+                    noResultOption.textContent = '--- ไม่พบข้อมูล ---';
+                    select.appendChild(noResultOption);
+                }
+            });
+            
+            // Clear search when dropdown changes
+            select.addEventListener('change', function() {
+                if (searchInput.value) {
+                    searchInput.value = '';
+                    searchInput.dispatchEvent(new Event('input'));
+                }
+            });
+        }
+        
+        function applyFilters() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const filterCustomer = document.getElementById('filterCustomer').value;
+            const filterBrand = document.getElementById('filterBrand').value;
+            const filterDefectGroup = document.getElementById('filterDefectGroup').value;
+            
+            const rows = document.querySelectorAll('#dataTable tbody tr');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const cells = row.cells;
+                const customer = cells[1].textContent;
+                const brand = cells[2].textContent;
+                const defectGroup = cells[3].textContent;
+                const rowText = row.textContent.toLowerCase();
+                
+                // Check all filters
+                const matchesSearch = rowText.includes(searchQuery);
+                const matchesCustomer = !filterCustomer || customer === filterCustomer;
+                const matchesBrand = !filterBrand || brand === filterBrand;
+                const matchesDefectGroup = !filterDefectGroup || defectGroup === filterDefectGroup;
+                
+                // Show row only if all filters match
+                if (matchesSearch && matchesCustomer && matchesBrand && matchesDefectGroup) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            updateFilterCount(visibleCount);
+        }
+        
+        function clearAllFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('filterCustomer').value = '';
+            document.getElementById('filterBrand').value = '';
+            document.getElementById('filterDefectGroup').value = '';
+            
+            // Clear filter search inputs
+            const searchInputs = ['filterCustomerSearch', 'filterBrandSearch', 'filterDefectGroupSearch'];
+            searchInputs.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.value = '';
+                    input.dispatchEvent(new Event('input'));
+                }
+            });
+            
+            applyFilters();
+        }
+        
+        function updateFilterCount(visibleCount) {
+            const totalCount = processedData.length;
+            const count = visibleCount !== undefined ? visibleCount : totalCount;
+            const filterCountEl = document.getElementById('filterCount');
+            filterCountEl.textContent = `แสดง ${count.toLocaleString()} จาก ${totalCount.toLocaleString()} รายการ`;
+        }
+
+        function exportToExcel() {
+            // สร้างข้อมูลสำหรับ export
+            const exportData = processedData.map((item, index) => ({
+                'ลำดับ': index + 1,
+                'ชื่อลูกค้า': item.customer,
+                'ตราสินค้า': item.brand,
+                'หมวดหมู่ปัญหา': item.defectGroup,
+                'ยอดเสียรวม (ใบ)': item.totalQuantity,
+                'จำนวนครั้งที่พบ': item.occurrences,
+                'เฉลี่ยต่อครั้ง': (item.totalQuantity / item.occurrences).toFixed(1)
+            }));
+
+            // สร้าง workbook
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'NCR Analysis');
+
+            // บันทึกไฟล์
+            const filename = `NCR_Analysis_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, filename);
+        }
+
+        // Register Chart.js plugins globally
+        Chart.register(ChartDataLabels);
+    </script>
+
+    <!-- Footer -->
+    <footer class="site-footer" role="contentinfo">
+        <div class="copyright">©2025 PD3 NCR Analytics. All rights reserved. &nbsp; Designed and developed by Awirut (ZP1048)</div>
+    </footer>
+</body>
+</html>
