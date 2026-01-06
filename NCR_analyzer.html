@@ -407,9 +407,9 @@
             background: var(--bg);
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 800px;
-            width: 90%;
-            max-height: 80vh;
+            max-width: 1200px;
+            width: 95%;
+            max-height: 90vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -438,7 +438,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: linear-gradient(135deg, #2c008c 0%, #0297b1 100%);
+            background: linear-gradient(135deg, #405362 0%, #0297b1 100%);
             color: white;
         }
         
@@ -493,15 +493,19 @@
         }
         
         .modal-summary-item .label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 5px;
+            font-size: 11px;
+            color: #86868b;
+            margin-bottom: 6px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .modal-summary-item .value {
-            font-size: 20px;
-            font-weight: 700;
+            font-size: 18px;
+            font-weight: 600;
             color: #1d1d1f;
+            line-height: 1.3;
         }
         
         .detail-list {
@@ -1171,7 +1175,7 @@
         const DEFECT_RULES = {
             "1. สี": /สีหาย|เปื้อนสี|สีอ่อน|สีเข้ม|สีลาก|สีลงไม่เต็ม|สีไม่เท่ากัน|สีเปื่อน/i,
             "2. รอยตำหนิพิเศษจากกระบวนการ": /รอยฟ้าผ่า|รอยพยาธี|รอยเส้นยาว|รอยขีดข่วน/i,
-            "3. พิมพ์เหลื่อมและอาร์ตเวิร์ก": /บล็อกเลื่อน|บล็อคเลื่อน|ตัวหนังสือหาย|พิมพ์ไม่ชัด|ไม่ตรงมาร์ค|อาร์ตเวิร์ก/i,
+            "3. บล็อกเลื่อนและอาร์ตเวิร์ก": /บล็อกเลื่อน|บล็อคเลื่อน|ตัวหนังสือหาย|พิมพ์ไม่ชัด|ไม่ตรงมาร์ค|อาร์ตเวิร์ก/i,
             "4. โครงสร้างผ้าและวัสดุ": /ผ้าพับ|ผ้าโย้|ด้ายแตก|ผ้าเป็นรู|ผ้าเป็นรอย|ผ้าเสีย/i,
             "5. อุปกรณ์และเครื่องจักร": /ฟิล์มพันลูกกลิ้ง|รอยเส้นเทป|ลายอัด|ลูกกลิ้งเป็นรอย/i,
             "6. สิ่งปนเปื้อน": /แมลง|ฝุ่น|น้ำมัน|สิ่งแปลกปลอม/i,
@@ -1236,8 +1240,40 @@
                     // Add active class to clicked tab and corresponding content
                     tab.classList.add('active');
                     document.getElementById(targetTab).classList.add('active');
+                    
+                    // รีเฟรช animation ของกราฟที่แสดงในแท็บที่เปิด
+                    setTimeout(() => {
+                        refreshChartsAnimation(targetTab);
+                    }, 100);
                 });
             });
+        }
+        
+        function refreshChartsAnimation(tabName) {
+            // เช็คว่ามีข้อมูลแล้วหรือยัง
+            if (!processedData || processedData.length === 0) return;
+            
+            // กำหนด chart ที่ต้อง refresh ในแต่ละ tab พร้อมฟังก์ชันสร้างใหม่
+            const chartMappings = {
+                'overview': () => {
+                    createDefectGroupsChart();
+                    createCustomerDistributionChart();
+                },
+                'byDefect': () => {
+                    createAllDefectGroupsChart();
+                },
+                'byCustomer': () => {
+                    createCustomerDefectsChart();
+                },
+                'byBrand': () => {
+                    createBrandDefectsChart();
+                }
+            };
+            
+            const recreateFunction = chartMappings[tabName];
+            if (recreateFunction) {
+                recreateFunction();
+            }
         }
 
         function handleFiles(files) {
@@ -1570,10 +1606,11 @@
             console.log('Available columns:', availableColumns);
             
             // การ mapping คอลัมน์สำหรับ NCR-PD3.xlsx
-            // H (7) = ตรา, I (8) = ลูกค้า, N (13) = ผลการตรวจสอบ1, R (17) = จำนวน
+            // H (7) = ตรา, I (8) = ลูกค้า, L (11) = เครื่องพิมพ์, N (13) = ผลการตรวจสอบ1, R (17) = จำนวน
             const columnMapping = {
                 'ลูกค้า': findBestColumn(availableColumns, ['ลูกค้า', 'customer', 'client'], ['I', 8]),
                 'ตรา': findBestColumn(availableColumns, ['ตรา', 'brand', 'trademark'], ['H', 7]),
+                'เครื่องพิมพ์': findBestColumn(availableColumns, ['เครื่องพิมพ์', 'printer', 'machine', 'เครื่อง'], ['L', 11]),
                 'ผลการตรวจสอบ1': findBestColumn(availableColumns, ['ผลการตรวจสอบ', 'ผลตรวจ', 'defect', 'problem', 'nc', 'issue'], ['N', 13]),
                 'จำนวน': findBestColumn(availableColumns, ['จำนวน', 'qty', 'quantity', 'amount'], ['R', 17])
             };
@@ -1602,6 +1639,7 @@
             const processed = inputData.map((row, index) => {
                 const customer = (row[columnMapping['ลูกค้า']] || '').toString().trim();
                 const brand = (row[columnMapping['ตรา']] || '').toString().trim();
+                const printer = (row[columnMapping['เครื่องพิมพ์']] || '').toString().trim();
                 const defectDescription = (row[columnMapping['ผลการตรวจสอบ1']] || '').toString().trim();
                 
                 // อ่านค่าจำนวนจากคอลัมน์ที่ map ไว้
@@ -1618,6 +1656,7 @@
                 return {
                     customer,
                     brand,
+                    printer,
                     defectDescription,
                     quantity,
                     defectGroup: classifyDefect(defectDescription),
@@ -1969,6 +2008,10 @@
                                 }
                             }
                         }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeInOutQuart'
                     }
                 },
                 plugins: [ChartDataLabels]
@@ -2022,11 +2065,11 @@
                     </div>
                     <div class="summary-item">
                         <div class="value">${othersCount}</div>
-                        <div class="label">ลูกค้าอื่นๆ</div>
+                        <div class="label">ลูกค้ารายอื่นๆที่ไม่ได้แสดงข้อมูล</div>
                     </div>
                     <div class="summary-item">
                         <div class="value">${othersTotal.toLocaleString()}</div>
-                        <div class="label">ยอดเสียของลูกค้าอื่นๆ (ใบ)</div>
+                        <div class="label">ยอดพิมพ์เสียของลูกค้ารายอื่นๆที่ไม่ได้แสดงข้อมูล (ใบ)</div>
                     </div>
                 </div>
             `;
@@ -2346,6 +2389,10 @@
                                 }
                             }
                         }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeInOutQuart'
                     }
                 },
                 plugins: [ChartDataLabels]
@@ -2391,28 +2438,46 @@
             
             console.log('Found related data:', relatedData.length, 'records');
             
+            // สรุปข้อมูลตามเครื่องพิมพ์
+            const printerStats = {};
+            relatedData.forEach(item => {
+                const printerName = item.printer || 'ไม่ระบุเครื่องพิมพ์';
+                if (!printerStats[printerName]) {
+                    printerStats[printerName] = {
+                        totalQty: 0,
+                        count: 0
+                    };
+                }
+                printerStats[printerName].totalQty += item.quantity;
+                printerStats[printerName].count += 1;
+            });
+            
+            // เรียงตามยอดของเสียมากไปน้อย
+            const sortedPrinters = Object.entries(printerStats)
+                .sort(([,a], [,b]) => b.totalQty - a.totalQty);
+            
             // Update modal title
             document.getElementById('modalTitle').innerHTML = `
                 🟢  รายละเอียด: ${summaryItem.customer} - ${summaryItem.brand}
             `;
             
-            // Update summary
+            // Update summary พร้อมข้อมูลเครื่องพิมพ์
             const summaryGrid = document.getElementById('modalSummaryGrid');
             summaryGrid.innerHTML = `
                 <div class="modal-summary-item">
                     <div class="label">ลูกค้า</div>
-                    <div class="value" style="font-size: 16px;">${summaryItem.customer}</div>
+                    <div class="value">${summaryItem.customer}</div>
                 </div>
                 <div class="modal-summary-item">
                     <div class="label">ตราสินค้า</div>
-                    <div class="value" style="font-size: 16px;">${summaryItem.brand}</div>
+                    <div class="value">${summaryItem.brand}</div>
                 </div>
                 <div class="modal-summary-item">
                     <div class="label">หมวดหมู่ปัญหา</div>
-                    <div class="value" style="font-size: 16px;">${summaryItem.defectGroup}</div>
+                    <div class="value">${summaryItem.defectGroup}</div>
                 </div>
                 <div class="modal-summary-item">
-                    <div class="label">ยอดเสียรวม</div>
+                    <div class="label">ยอดพิมพ์เสียรวม</div>
                     <div class="value">${summaryItem.totalQuantity.toLocaleString()} ใบ</div>
                 </div>
                 <div class="modal-summary-item">
@@ -2424,6 +2489,75 @@
                     <div class="value">${(summaryItem.totalQuantity / summaryItem.occurrences).toFixed(1)} ใบ</div>
                 </div>
             `;
+            
+            // เพิ่มส่วนแสดงข้อมูลเครื่องพิมพ์
+            let printerSummaryHTML = '';
+            if (sortedPrinters.length > 0) {
+                printerSummaryHTML = `
+                    <div style="
+                        grid-column: 1 / -1;
+                        margin-top: 20px;
+                        padding-top: 20px;
+                        border-top: 1px solid var(--border);
+                    ">
+                        <div style="
+                            font-size: 15px;
+                            font-weight: 600;
+                            color: var(--text);
+                            margin-bottom: 16px;
+                            text-align: left;
+                        ">
+                           ⚙️ เครื่องพิมพ์
+                        </div>
+                        <div style="display: flex; gap: 16px; justify-content: flex-start;">
+                            ${sortedPrinters.map(([printer, stats]) => `
+                                <div style="
+                                    background: linear-gradient(135deg, var(--bg-secondary), var(--bg));
+                                    border: 1px solid var(--border);
+                                    border-radius: 12px;
+                                    padding: 20px 24px;
+                                    text-align: center;
+                                    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                                    transition: transform 0.2s, box-shadow 0.2s;
+                                    min-width: 140px;
+                                ">
+                                    <div style="
+                                        font-weight: 700;
+                                        color: var(--accent);
+                                        font-size: 20px;
+                                        margin-bottom: 16px;
+                                        letter-spacing: 0.5px;
+                                    ">
+                                        ${printer}
+                                    </div>
+                                    <div style="
+                                        background: linear-gradient(135deg, #ff6b6b, #ff3b30);
+                                        color: white;
+                                        padding: 14px 20px;
+                                        border-radius: 10px;
+                                        font-weight: bold;
+                                        font-size: 24px;
+                                        margin-bottom: 12px;
+                                        box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+                                        line-height: 1;
+                                    ">
+                                        ${stats.totalQty.toLocaleString()}
+                                    </div>
+                                    <div style="
+                                        font-size: 14px;
+                                        color: var(--text-secondary);
+                                        font-weight: 500;
+                                    ">
+                                        พบ ${stats.count} ครั้ง
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            summaryGrid.innerHTML += printerSummaryHTML;
             
             // Update detail list
             const detailList = document.getElementById('detailList');
@@ -2677,7 +2811,7 @@
                 'ชื่อลูกค้า': item.customer,
                 'ตราสินค้า': item.brand,
                 'หมวดหมู่ปัญหา': item.defectGroup,
-                'ยอดเสียรวม (ใบ)': item.totalQuantity,
+                'ยอดพิมพ์เสียรวม (ใบ)': item.totalQuantity,
                 'จำนวนครั้งที่พบ': item.occurrences,
                 'เฉลี่ยต่อครั้ง': (item.totalQuantity / item.occurrences).toFixed(1)
             }));
@@ -2702,3 +2836,5 @@
     </footer>
 </body>
 </html>
+
+

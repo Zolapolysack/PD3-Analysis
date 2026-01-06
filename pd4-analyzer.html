@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PD4 Waste Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --accent: #007aff;
+            --accent-hover: #0051d5;
+            --success: #34c759;
+            --warning: #ff9500;
+            --danger: #ff3b30;
+            --bg: #ffffff;
+            --bg-secondary: #f5f5f7;
+            --text: #1d1d1f;
+            --text-secondary: #86868b;
+            --border: #d2d2d7;
+            --shadow: 0 2px 16px rgba(0,0,0,0.08);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Sarabun', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding-top: 20px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+            letter-spacing: -1.2px;
+        }
+
+        .header p {
+            font-size: 19px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            line-height: 1.8;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            background: var(--bg);
+            padding: 60px;
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            margin-bottom: 40px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 80px 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: var(--bg-secondary);
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent);
+            background: #fafafa;
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent);
+            background: #f0f8ff;
+            border-style: solid;
+        }
+
+        .upload-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.6;
+        }
+
+        .upload-area h3 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .upload-area p {
+            color: var(--text-secondary);
+            font-size: 17px;
+            margin-bottom: 32px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn-upload {
+            background: var(--accent);
+            color: white;
+            padding: 12px 32px;
+            border: none;
+            border-radius: 980px;
+            font-size: 17px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-upload:hover {
+            background: var(--accent-hover);
+            transform: scale(1.02);
+        }
+
+        .btn-upload:active {
+            transform: scale(0.98);
+        }
+
+        /* Processing Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg);
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--bg-secondary);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .modal-content h3 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .modal-content p {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        .progress-info {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-header {
+            margin-bottom: 48px;
+        }
+
+        .results-header h2 {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.8px;
+            margin-bottom: 12px;
+        }
+
+        .results-header p {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 60px;
+        }
+
+        .stat-card {
+            background: var(--bg);
+            padding: 36px 32px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .stat-value {
+            font-size: 40px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing:321.5px;
+        }
+
+        .table-controls {
+            display: flex;
+            gap: 12px;
+            margin-botto80px;
+            padding: 14px 18px;
+            border: 1px solid var(--border);
+            border-radius: 10
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            padding: 11px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            background: var(--bg);
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn-export {
+            padding: 14px 28px;
+            background: var(--text);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-export:hover {
+            background: #000;
+        }
+
+        .btn-export:active {
+            transform: scale(0.98);
+        }
+
+        /* Table */
+        .table-wrapper {
+            overflow-x: auto;
+            background: var(--bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--bg-secondary);
+        }
+
+        thead th {20px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.8ercase;
+            letter-spacing: 0.5px;
+        }
+
+        thead th:hover {
+            color: var(--text);
+        }
+
+        thead th.sortable::after {
+            content: ' ↕';
+            opacity: 0.4;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        tbody td {
+            padding: 20px 16px;
+            font-size: 15px;
+            color: var(--text);
+            line-height: 1.6;
+        }
+/* Detail View */
+        .detail-view {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .detail-view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .back-button {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 32px;
+            transition: all 0.2s ease;
+        }
+
+        .back-button:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .product-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 40px;
+            letter-spacing: -0.5px;
+        }
+
+        .comparison-table {
+            background: var(--bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        .comparison-header {
+            background: var(--bg-secondary);
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .comparison-header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .machine-row {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s ease;
+        }
+
+        .machine-row:last-child {
+            border-bottom: none;
+        }
+
+        .machine-row:hover {
+            background: var(--bg-secondary);
+        }
+
+        .machine-name {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .defect-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .defect-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .defect-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .defect-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .total-defects {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .total-defects strong {
+            color: var(--danger);
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .analysis-section {
+            background: var(--bg);
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .analysis-section h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 20px;
+        }
+
+        .analysis-item {
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .analysis-item:last-child {
+            border-bottom: none;
+        }
+
+        .analysis-item h4 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .analysis-item p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .highlight {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .highlight-danger {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .highlight-success {
+            color: var(--success);
+            font-weight: 600
+
+        .badge-acceptable {
+            background: #fff3cd;
+            color: #8b6914;
+        }
+
+        .badge-poor {
+            background: #ffd6d6;
+            color: #c41e3a;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 36px;
+            }
+
+            .upload-section {
+                padding: 32px 24px;
+            }
+
+            .upload-area {
+                padding: 60px 24px;
+            }
+
+            .modal-content {
+                padding: 32px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            tbody td, thead th {
+                padding: 12px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>PD4 Analysis</h1>
+            <p>ระบบวิเคราะห์ของเสีย - หาเครื่องจักรที่ดีที่สุด</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📄</div>
+                <h3>อัพโหลดไฟล์รายงาน</h3>
+                <p>รองรับ Excel (.xls, .xlsx) และ CSV</p>
+                <button class="btn-upload" onclick="document.getElementById('fileInput').click()">
+                    เลือกไฟล์
+                </button>
+                <input type="file" id="fileInput" class="file-input" accept=".csv,.xls,.xlsx" onchange="handleFileSelect(event)">
+            </div>
+        </div>
+
+        <!-- Processing Modal -->
+        <div class="modal" id="processingModal">
+            <div class="modal-content">
+                <div class="modal-spinner"></div>
+                <h3>กำลังประมวลผล</h3>
+                <p>กรุณารอสักครู่</p>
+                <div class="progress-info" id="progressInfo">
+                    กำลังอ่านและวิเคราะห์ข้อมูล
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section - List View -->
+        <div class="results-section" id="resultsSection">
+            <div class="results-header">
+                <h2>ผลการวิเคราะห์</h2>
+                <p>คลิกที่สินค้าเพื่อดูรายละเอียดและการเปรียบเทียบเครื่องจักร</p>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid" id="statsGrid">
+                <!-- Stats will be populated dynamically -->
+            </div>
+
+            <!-- Table Controls -->
+            <div class="table-controls">
+                <input type="text" class="search-box" id="searchBox" placeholder="ค้นหาสินค้า">
+                <button class="btn-export" onclick="exportToCSV()">ส่งออก CSV</button>
+            </div>
+
+            <!-- Results Table -->
+            <div class="table-wrapper">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable" onclick="sortTable(0)">#</th>
+                            <th class="sortable" onclick="sortTable(1)">รายการสินค้า</th>
+                            <th class="sortable" onclick="sortTable(2)">จำนวนเครื่อง</th>
+                            <th class="sortable" onclick="sortTable(3)">รวมของเสีย</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Detail View -->
+        <div class="detail-view" id="detailView">
+            <button class="back-button" onclick="showListView()">← กลับไปรายการสินค้า</button>
+            
+            <h2 class="product-title" id="detailProductName"></h2>
+
+            <!-- Machine Comparison -->
+            <div class="comparison-table" id="machineComparison">
+                <!-- Machine data will be populated dynamically -->
+            </div>
+productMachinesMap = {}; // Store all machines for each product
+        let 
+            <!-- Analysis & Summary -->
+            <div class="analysis-section" id="analysisSummary">
+                <!-- Analysis will be populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let analysisResults = [];
+        let currentSortColumn = -1;
+        let currentSortAsc = true;
+
+        // Drag and Drop Handlers
+        const uploadArea = document.getElementById('uploadArea');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        });
+
+        // File Selection Handler
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        }
+
+        // Process File
+        function processFile(file) {
+            // Validate file type
+            const validExtensions = ['.csv', '.xls', '.xlsx'];
+            const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+            
+            if (!validExtensions.includes(fileExtension)) {
+                alert('กรุณาเลือกไฟล์ Excel (.xls, .xlsx) หรือ CSV เท่านั้น');
+                return;
+            }
+
+            // Show processing modal
+            const modal = document.getElementById('processingModal');
+            const progressInfo = document.getElementById('progressInfo');
+            modal.classList.add('active');
+            
+            progressInfo.innerHTML = `<strong>ไฟล์:</strong> ${file.name}<br><strong>สถานะ:</strong> กำลังอ่านข้อมูล...`;
+
+            // Process Excel file
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Get first sheet
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Convert to array of arrays (preserves column positions)
+                    const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                    
+                    processData(file.name, rawData);
+                } catch (error) {
+                    modal.classList.remove('active');
+                    alert('เกิดข้อผิดพลาดในการอ่านไฟล์: ' + error.message);
+                    console.error(error);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Process parsed data
+        function processData(fileName, data) {
+            const modal = document.getElementById('processingModal');
+            const progressInfo = document.getElementById('progressInfo');
+            
+            progressInfo.innerHTML = `<strong>ไฟล์:</strong> ${fileName}<br><strong>สถานะ:</strong> กำลังวิเคราะห์ ${data.length.toLocaleString()} รายการ...`;
+            
+            setTimeout(() => {
+                try {
+                    const analysis = analyzeData(data);
+                    displayResults(analysis);
+                    
+                    // Show success and hide modal
+                    setTimeout(() => {
+                        modal.classList.remove('active');
+                        document.getElementById('resultsSection').classList.add('active');
+                        document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+                    }, 500);
+                } catch (error) {
+                    modal.classList.remove('active');
+                    alert('เกิดข้อผิดพลาดในการประมวลผล: ' + error.message);
+                    console.error(error);
+                }
+            }, 800);
+        }
+
+        // Helper function to safely parse numbers from Excel or CSV
+        function parseNumber(value) {
+            if (value === null || value === undefined || value === '') {
+                return 0;
+            }
+            if (typeof value === 'number') {
+                return value;
+            }
+            if (typeof value === 'string') {
+                return parseFloat(value.replace(/,/g, '')) || 0;
+            }
+            return 0;
+        }
+        function analyzeData(data) {
+            const summary = {};
+            productMachinesMap = {}; // Reset letter to index (A=0, B=1, etc.)
+        function columnToIndex(col) {
+            let index = 0;
+            for (let i = 0; i < col.length; i++) {
+                index = index * 26 + (col.charCodeAt(i) - 'A'.charCodeAt(0) + 1);
+            }
+            return index - 1;
+        }
+
+        // Main Analysis Function - REDESIGNED for Column Index Reading
+        function analyzeData(data) {
+            const summary = {};
+            const columnMap = {
+                productName: columnToIndex('C'),     // รายการ
+                width: columnToIndex('D'),           // ขนาด (กว้าง)
+                length: columnToIndex('E'),          // ขนาด(ยาว)
+                bagColor: columnToIndex('G'),        // สีถุง
+                machine: columnToIndex('O'),         // เครื่องพิมพ์
+                defectBlock: columnToIndex('AK'),    // บล็อกเลื่อน
+                defectHole: columnToIndex('AL'),     // รู(โคโรน่า)
+                defectMark: columnToIndex('AM'),     // มาร์คจาง
+                defectNoColor: columnToIndex('AN'),  // สีไม่ติด
+                defectFold: columnToIndex('AO'),     // ผ้าพับ
+                defectPeel: columnToIndex('AP'),     // สีลอก
+                defectPaint: columnToIndex('AQ')     // ลบสี/แต้มสี
+            };
+
+            data.forEach((rowArray, rowIndex) => {
+                // Skip header row (first row)
+                if (rowIndex === 0) return;
+                
+                // Skip empty rows
+                if (!rowArray || rowArray.length === 0) return;
+
+                // Extract data using column indices
+                const productName = rowArray[columnMap.productName];
+                const width = rowArray[columnMap.width];
+                const length = rowArray[columnMap.length];
+                const bagColor = rowArray[columnMap.bagColor];
+                const machineName = rowArray[columnMap.machine];
+
+                // Extract defect data
+                const defectBlock = parseNumber(rowArray[columnMap.defectBlock]);
+                const defectHole = parseNumber(rowArray[columnMap.defectHole]);
+                const defectMark = parseNumber(rowArray[columnMap.defectMark]);
+                const defectNoColor = parseNumber(rowArray[columnMap.defectNoColor]);
+                const defectFold = parseNumber(rowArray[columnMap.defectFold]);
+                const defectPeel = parseNumber(rowArray[columnMap.defectPeel]);
+                const defectPaint = parseNumber(rowArray[columnMap.defectPaint]);
+
+                // Calculate total defects
+                const totalDefects = defectBlock + defectHole + defectMark + defectNoColor + 
+                                   defectFold + defectPeel + defectPaint;
+
+                // Skip if no valid data
+                if (!productName || !machineName || totalDefects === 0) {
+                    return;
+                }
+
+                // Create unique keys
+                const productKey = `${productName} (${width}x${length}) ${bagColor}`;
+                const groupKey = `${productKey}|${machineName}`;
+
+                if (!summary[groupKey]) {
+                    summary[groupKey] = {
+                        productDisplay: productKey,
+                        productName: productName,
+                        width: width,
+                        length: length,
+                        bagColor: bagColor,
+                        machine: machineName,
+                        totalDefects: 0,
+                        defectBlock: 0,
+                        defectHole: 0,
+                        defectMark: 0,
+                        defectNoColor: 0,
+                        defectFold: 0,
+                        defectPeel: 0,
+                        defectPaint: 0
+                    };
+                }
+and store all machines
+            Object.values(summary).forEach(item => {
+                const productKey = item.productDisplay;
+                
+                if (!productMachinesMap[productKey]) {
+                    productMachinesMap[productKey] = [];
+                }
+                
+                productMachinesMap[productKey].push(item);
+            });
+
+            // Create summary for each product (aggregate all machines)
+            const finalResults = [];
+            
+            Object.keys(productMachinesMap).forEach(productKey => {
+                const machines = productMachinesMap[productKey];
+                
+                // Calculate total defects across all machines
+                const totalDefects = machines.reduce((sum, m) => sum + m.totalDefects, 0);
+                const machineCount = machines.length;
+
+                finalResults.push({
+                    product: productKey,
+                    machineCount: machineCount,
+                    totalDefects: totalDefects
+                });
+            });
+
+            // Sort by total defects (ascending
+                    defectHole: bestMachine.defectHole,
+                    defectMark: bestMachine.defectMark,
+                    defectNoColor: bestMachine.defectNoColor,
+                    defectFold: bestMachine.defectFold,
+                    defectPeel: bestMachine.defectPeel,
+                    defectPaint: bestMachine.defectPaint,
+                    grade: grade,
+                    gradeClass: gradeClass
+                });
+            });
+
+            // Sort by total defects (ascending - least defects first)
+            finalResults.sort((a, b) => a.totalDefects - b.totalDefects);
+
+            return finalResults;
+        }
+
+        // Display Results
+        function displayResults(results) {
+            analysisResults = results;
+
+            // Calculate statistics
+            const totalProducts = results.length;
+            const totalDefects = results.reduce((sum, r) => sum + r.totalDefects, 0);
+            const avgDefects = totalDefects / totalProducts;
+            const excellentCount = results.filter(r => r.totalDefects <= 100).length;
+
+            // Display stats
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">จำนวนสินค้าทั้งหมด</div>
+                    <div class="stat-value">${totalProducts}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">รวมของเสียทั้งหมด</div>
+                    <div class="stat-value">${totalDefects.toLocaleString()}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">ของเสียเฉลี่ย/สินค้า</div>
+                    <div class="stat-value">${Math.round(avgDefects).toLocaleString()}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">สินค้าคุณภาพดีเยี่ยม</div>
+                    <div class="stat-value">${excellentCount}</div>
+                </div>
+            `;
+
+            // Display table
+            renderTable(results);
+
+            // Setup search
+            const searchBox = document.getElementById('searchBox');
+            searchBox.removeEventListener('input', filterTable);
+            searchBox.addEventListener('input', filterTable);
+        }
+
+        // Render Table
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="12" class="no-data">
+                            <p>ไม่พบข้อมูล</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = data.map((item, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td><strong>${item.product}</strong></td>
+                    <td>${item.bestMachine}</td>
+                    <td><strong>${item.totalDefects.toLocaleString()}</strong></td>
+                    <td>${item.defectBlock.toLocaleString()}</td>
+                    <td>${item.defectHole.toLocaleString()}</td>
+                    <td>${item.defectMark.toLocaleString()}</td>
+                    <td>${item.defectNoColor.toLocaleString()}</td>
+                    <td>${item.defectFold.toLocaleString()}</td>
+                    <td>${item.defectPeel.toLocaleString()}</td>
+                    <td>${item.defectPaint.toLocaleString()}</td>
+                    <td><span class="badge ${item.gradeClass}">${item.grade}</span></td>
+                </tr>
+            `).join('');
+        } onclick="showProductDetail('${item.product.replace(/'/g, "\\'")}')">
+                    <td>${index + 1}</td>
+                    <td><strong>${item.product}</strong></td>
+                    <td>${item.machineCount} เครื่อง</td>
+                    <td><strong>${item.totalDefects.toLocaleString()}</strong
+
+                switch(columnIndex) {
+                    case 0: return 0; // #
+                    case 1: aVal = a.product; bVal = b.product; break;
+                    case 2: aVal = a.bestMachine; bVal = b.bestMachine; break;
+                    case 3: aVal = a.totalDefects; bVal = b.totalDefects; break;
+                    case 4: aVal = a.defectBlock; bVal = b.defectBlock; break;
+                    case 5: aVal = a.defectHole; bVal = b.defectHole; break;
+                    case 6: aVal = a.defectMark; bVal = b.defectMark; break;
+                    case 7: aVal = a.defectNoColor; bVal = b.defectNoColor; break;
+                    case 8: aVal = a.defectFold; bVal = b.defectFold; break;
+                    case 9: aVal = a.defectPeel; bVal = b.defectPeel; break;
+                    case 10: aVal = a.defectPaint; bVal = b.defectPaint; break;
+                    case 11: aVal = a.grade; bVal = b.grade; break;
+                    default: return 0;
+                }
+
+                if (typeof aVal === 'string') {
+                    return currentSortAsc 
+                        ? aVal.localeCompare(bVal, 'th')
+                        : bVal.localeCompare(aVal, 'th');
+                } else {
+                    return currentSortAsc ? aVal - bVal : bVal - aVal;
+                }
+            });
+
+                    case 1: aVal = a.product; bVal = b.product; break;
+                    case 2: aVal = a.machineCount; bVal = b.machineCount; break;
+                    case 3: aVal = a.totalDefects; bVal = b.totalDefectsarchTerm);
+            });
+
+            renderTable(filteredData);
+        }
+
+        // Export to CSV
+        function exportToCSV() {
+            const headers = ['ลำดับ', 'รายการสินค้า', 'เครื่องที่แนะนำ', 'รวมของเสีย', 'บล็อกเลื่อน', 'รู(โคโรน่า)', 'มาร์คจาง', 'สีไม่ติด', 'ผ้าพับ', 'สีลอก', 'ลบสี/แต้มสี', 'ระดับคุณภาพ'];
+            
+            const rows = analysisResults.map((item, index) => [
+                index + 1,
+                item.product,
+                item.bestMachine,
+                item.totalDefects,
+                item.defectBlock,
+                item.defectHole,
+                item.defectMark,
+                item.defectNoColor,
+                item.defectFold,
+                item.defectPeel,
+                item.defectPaint,
+                item.grade
+            ]);
+
+            let csvContent = '\uFEFF'; // UTF-8 BOM for Thai characters
+            csvContent += headers.join(',') + '\n';
+            csvContent += rows.map(row => row.join(',')).join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `waste_analysis_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);;
+            });
+
+            renderTable(filteredData);
+        }
+
+        // Show Product Detail
+        function showProductDetail(productName) {
+            const machines = productMachinesMap[productName];
+            if (!machines) return;
+
+            // Hide list viewจำนวนเครื่อง', 'รวมของเสีย'];
+            
+            const rows = analysisResults.map((item, index) => [
+                index + 1,
+                item.product,
+                item.machineCount,
+                item.totalDefectsงรายละเอียดของเสียแต่ละประเภทจากทุกเครื่องที่ผลิตสินค้านี้</p>
+                </div>
+                ${sortedMachines.map((machine, index) => `
+                    <div class="machine-row">
+                        <div class="machine-name">${index + 1}. ${machine.machine}</div>
+                        <div class="defect-grid">
+                            <div class="defect-item">
+                                <div class="defect-label">บล็อกเลื่อน</div>
+                                <div class="defect-value">${machine.defectBlock.toLocaleString()}</div>
+                            </div>
+                            <div class="defect-item">
+                                <div class="defect-label">รู(โคโรน่า)</div>
+                                <div class="defect-value">${machine.defectHole.toLocaleString()}</div>
+                            </div>
+                            <div class="defect-item">
+                                <div class="defect-label">มาร์คจาง</div>
+                                <div class="defect-value">${machine.defectMark.toLocaleString()}</div>
+                            </div>
+                            <div class="defect-item">
+                                <div class="defect-label">สีไม่ติด</div>
+                                <div class="defect-value">${machine.defectNoColor.toLocaleString()}</div>
+                            </div>
+                            <div class="defect-item">
+                                <div class="defect-label">ผ้าพับ</div>
+                                <div class="defect-value">${machine.defectFold.toLocaleString()}</div>
+                            </div>
+                            <div class="defect-item">
+                                <div class="defect-label">สีลอก</div>
+                                <div class="defect-value">${machine.defectPeel.toLocaleString()}</div>
+                            </div>
+                            <div class="defect-item">
+                                <div class="defect-label">ลบสี/แต้มสี</div>
+                                <div class="defect-value">${machine.defectPaint.toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div class="total-defects">
+                            รวมของเสียทั้งหมด: <strong>${machine.totalDefects.toLocaleString()}</strong> ชิ้น
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+            document.getElementById('machineComparison').innerHTML = comparisonHtml;
+
+            // Generate analysis
+            const bestMachine = sortedMachines[0];
+            const worstMachine = sortedMachines[sortedMachines.length - 1];
+            const totalDefects = sortedMachines.reduce((sum, m) => sum + m.totalDefects, 0);
+            const avgDefects = totalDefects / sortedMachines.length;
+            
+            // Find most common defect type
+            const defectTotals = {
+                'บล็อกเลื่อน': sortedMachines.reduce((sum, m) => sum + m.defectBlock, 0),
+                'รู(โคโรน่า)': sortedMachines.reduce((sum, m) => sum + m.defectHole, 0),
+                'มาร์คจาง': sortedMachines.reduce((sum, m) => sum + m.defectMark, 0),
+                'สีไม่ติด': sortedMachines.reduce((sum, m) => sum + m.defectNoColor, 0),
+                'ผ้าพับ': sortedMachines.reduce((sum, m) => sum + m.defectFold, 0),
+                'สีลอก': sortedMachines.reduce((sum, m) => sum + m.defectPeel, 0),
+                'ลบสี/แต้มสี': sortedMachines.reduce((sum, m) => sum + m.defectPaint, 0)
+            };
+            
+            const maxDefectType = Object.keys(defectTotals).reduce((a, b) => 
+                defectTotals[a] > defectTotals[b] ? a : b
+            );
+
+            const analysisHtml = `
+                <h3>การวิเคราะห์และสรุปผล</h3>
+                
+                <div class="analysis-item">
+                    <h4>ภาพรวม</h4>
+                    <p>สินค้านี้ผลิตโดย <span class="highlight">${sortedMachines.length} เครื่อง</span> 
+                    มีของเสียรวมทั้งหมด <span class="highlight-danger">${totalDefects.toLocaleString()} ชิ้น</span> 
+                    โดยเฉลี่ยต่อเครื่อง <span class="highlight">${Math.round(avgDefects).toLocaleString()} ชิ้น</span></p>
+                </div>
+
+                <div class="analysis-item">
+                    <h4>เครื่องที่มีประสิทธิภาพดีที่สุด</h4>
+                    <p><span class="highlight-success">${bestMachine.machine}</span> มีของเสียน้อยที่สุด 
+                    <span class="highlight-success">${bestMachine.totalDefects.toLocaleString()} ชิ้น</span> 
+                    ซึ่งต่ำกว่าค่าเฉลี่ย ${Math.round(((avgDefects - bestMachine.totalDefects) / avgDefects) * 100)}%</p>
+                </div>
+
+                <div class="analysis-item">
+                    <h4>เครื่องที่ต้องปรับปรุง</h4>
+                    <p><span class="highlight-danger">${worstMachine.machine}</span> มีของเสียมากที่สุด 
+                    <span class="highlight-danger">${worstMachine.totalDefects.toLocaleString()} ชิ้น</span> 
+                    ซึ่งสูงกว่าเครื่องที่ดีที่สุด ${Math.round(((worstMachine.totalDefects - bestMachine.totalDefects) / bestMachine.totalDefects) * 100)}%</p>
+                </div>
+
+                <div class="analysis-item">
+                    <h4>ประเภทของเสียที่พบมากที่สุด</h4>
+                    <p>ของเสียประเภท <span class="highlight-danger">${maxDefectType}</span> 
+                    มีจำนวนมากที่สุด <span class="highlight-danger">${defectTotals[maxDefectType].toLocaleString()} ชิ้น</span> 
+                    คิดเป็น ${Math.round((defectTotals[maxDefectType] / totalDefects) * 100)}% ของของเสียทั้งหมด 
+                    ควรตรวจสอบและแก้ไขปัญหาในจุดนี้เป็นลำดับแรก</p>
+                </div>
+
+                <div class="analysis-item">
+                    <h4>คำแนะนำ</h4>
+                    <p>แนะนำให้ใช้ <span class="highlight-success">${bestMachine.machine}</span> ในการผลิตสินค้านี้ 
+                    และศึกษาวิธีการทำงานของเครื่องนี้เพื่อนำไปปรับปรุงเครื่องอื่นๆ 
+                    โดยเฉพาะการลดของเสียประเภท${maxDefectType}</p>
+                </div>
+            `;
+            document.getElementById('analysisSummary').innerHTML = analysisHtml;
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Show List View
+        function showListView() {
+            document.getElementById('detailView').classList.remove('active');
+            document.getElementById('resultsSection').classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'smooth' }

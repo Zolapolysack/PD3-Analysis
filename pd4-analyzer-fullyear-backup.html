@@ -1,0 +1,1895 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PD4 Waste Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --accent: #007aff;
+            --accent-hover: #0051d5;
+            --success: #34c759;
+            --warning: #ff9500;
+            --danger: #ff3b30;
+            --bg: #ffffff;
+            --bg-secondary: #f5f5f7;
+            --text: #1d1d1f;
+            --text-secondary: #86868b;
+            --border: #d2d2d7;
+            --shadow: 0 2px 16px rgba(0,0,0,0.08);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Sarabun', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding-top: 20px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+            letter-spacing: -1.2px;
+        }
+
+        .header p {
+            font-size: 19px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            line-height: 1.8;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            background: var(--bg);
+            padding: 60px;
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            margin-bottom: 40px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 80px 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: var(--bg-secondary);
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent);
+            background: #fafafa;
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent);
+            background: #f0f8ff;
+            border-style: solid;
+        }
+
+        .upload-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.6;
+        }
+
+        .upload-text {
+            font-size: 19px;
+            color: var(--text);
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .upload-hint {
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            padding: 14px 32px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 20px;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        /* Progress Modal */
+        .progress-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-modal.active {
+            display: flex;
+        }
+
+        .progress-content {
+            background: var(--bg);
+            padding: 48px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+        }
+
+        .spinner {
+            border: 3px solid var(--bg-secondary);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-info {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 60px;
+        }
+
+        .stat-card {
+            background: var(--bg);
+            padding: 36px 32px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .stat-value {
+            font-size: 40px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -1.5px;
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-header {
+            margin-bottom: 48px;
+        }
+
+        .results-header h2 {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.8px;
+            margin-bottom: 12px;
+        }
+
+        .results-header p {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        /* Table Controls */
+        .table-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 280px;
+            padding: 14px 18px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            background: var(--bg);
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn-export {
+            padding: 14px 28px;
+            background: var(--text);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-export:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Table */
+        .table-wrapper {
+            background: var(--bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        thead th {
+            padding: 20px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        thead th:hover {
+            color: var(--accent);
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        tbody td {
+            padding: 20px 16px;
+            font-size: 15px;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        tbody tr:hover td:first-child {
+            color: var(--accent);
+        }
+
+        /* Detail View */
+        .detail-view {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .detail-view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .back-button {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 32px;
+            transition: all 0.2s ease;
+        }
+
+        .back-button:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .product-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 40px;
+            letter-spacing: -0.5px;
+        }
+
+        .comparison-table {
+            background: var(--bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        .comparison-header {
+            background: var(--bg-secondary);
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .comparison-header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .machine-row {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s ease;
+        }
+
+        .machine-row:last-child {
+            border-bottom: none;
+        }
+
+        .machine-row:hover {
+            background: var(--bg-secondary);
+        }
+
+        .machine-name {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .defect-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .defect-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .defect-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .defect-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .total-defects {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .total-defects strong {
+            color: var(--danger);
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .analysis-section {
+            background: var(--bg);
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .analysis-section h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 20px;
+        }
+
+        .analysis-item {
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .analysis-item:last-child {
+            border-bottom: none;
+        }
+
+        .analysis-item h4 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .analysis-item p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .highlight {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .highlight-danger {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .highlight-success {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        /* File Item Styles */
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+
+        .file-item:hover {
+            border-color: var(--accent);
+            background: #fafafa;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .file-icon {
+            font-size: 24px;
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .file-size {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .file-remove {
+            padding: 8px 16px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .file-remove:hover {
+            background: #cc0000;
+        }
+
+        /* Month Tabs */
+        .month-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            background: var(--bg);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .month-tab {
+            padding: 10px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text);
+        }
+
+        .month-tab:hover {
+            border-color: var(--accent);
+            background: #f0f8ff;
+        }
+
+        .month-tab.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* Charts Section */
+        .charts-section {
+            margin-top: 48px;
+            background: var(--bg);
+            padding: 48px;
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+        }
+
+        .charts-section h3 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 32px;
+            letter-spacing: -0.5px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        .chart-container {
+            background: var(--bg-secondary);
+            padding: 32px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 350px;
+        }
+
+        .chart-full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-legend {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* Footer */
+        .site-footer {
+            margin-top: 48px;
+            padding: 18px 20px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: transparent;
+        }
+
+        .site-footer .copyright,
+        .site-footer .credit {
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: 0.2px;
+            display: inline-block;
+            margin: 0;
+        }
+
+        .site-footer {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>อัปโหลดไฟล์รายงานทั้งปี ( 12 เดือน )</h1>
+            <p>กรุณาอัพโหลดไฟล์รายงาน 12 ไฟล์ (หนึ่งไฟล์ต่อหนึ่งเดือน) รองรับไฟล์ Excel (.xls, .xlsx) และ CSV</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">ลากไฟล์ทั้ง 12 ไฟล์มาวางที่นี่</div>
+                <div class="upload-hint">หรือ</div>
+                <button class="btn-primary" onclick="document.getElementById('fileInput').click()">เลือก 12 ไฟล์</button>
+                <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls,.csv" multiple>
+            </div>
+            
+            <!-- Files List -->
+            <div id="filesList" style="margin-top: 24px; display: none;">
+                <h3 style="font-size: 19px; margin-bottom: 16px; color: var(--text);">ไฟล์ที่เลือก (<span id="filesCount">0</span>/12)</h3>
+                <div id="filesListContainer" style="display: grid; gap: 12px;">
+                    <!-- Files will be listed here -->
+                </div>
+                <button class="btn-primary" onclick="processAllFiles()" id="processBtn" style="margin-top: 20px; display: none;">เริ่มประมวลผลทั้งหมด</button>
+            </div>
+        </div>
+
+        <!-- Progress Modal -->
+        <div class="progress-modal" id="progressModal">
+            <div class="progress-content">
+                <div class="spinner"></div>
+                <div class="progress-info" id="progressInfo">
+                    กำลังประมวลผล...
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section - List View -->
+        <div class="results-section" id="resultsSection">
+            <div class="results-header">
+                <h2>ผลการวิเคราะห์ภาพรวมทั้งปี</h2>
+                <p>คลิกที่สินค้าเพื่อดูรายละเอียดและการเปรียบเทียบเครื่องจักร | เลือกเดือนเพื่อดูข้อมูลแยกตามเดือน</p>
+            </div>
+
+            <!-- Month Tabs -->
+            <div class="month-tabs" id="monthTabs" style="display: none;">
+                <!-- Tabs will be populated dynamically -->
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid" id="statsGrid">
+                <!-- Stats will be populated dynamically -->
+            </div>
+
+            <!-- Table Controls -->
+            <div class="table-controls">
+                <input type="text" class="search-box" id="searchBox" placeholder="ค้นหาสินค้า">
+                <button class="btn-export" onclick="exportToCSV()">ส่งออก xlsx</button>
+            </div>
+
+            <!-- Results Table -->
+            <div class="table-wrapper">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable" onclick="sortTable(0)">ลำดับ</th>
+                            <th class="sortable" onclick="sortTable(1)">รายการสินค้า</th>
+                            <th class="sortable" onclick="sortTable(2)">จำนวนเครื่อง</th>
+                            <th class="sortable" onclick="sortTable(3)">รวมของเสีย</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Detail View -->
+        <div class="detail-view" id="detailView">
+            <button class="back-button" onclick="showListView()">← กลับไปรายการสินค้า</button>
+            
+            <h2 class="product-title" id="detailProductName"></h2>
+
+            <!-- Machine Comparison -->
+            <div class="comparison-table" id="machineComparison">
+                <!-- Machine data will be populated dynamically -->
+            </div>
+
+            <!-- Analysis & Summary -->
+            <div class="analysis-section" id="analysisSummary">
+                <!-- Analysis will be populated dynamically -->
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section" id="chartsSection">
+                <h3> กราฟแสดงผล</h3>
+                <div class="charts-grid">
+                    <!-- Bar Chart: Machine Comparison -->
+                    <div class="chart-container chart-full-width">
+                        <div class="chart-title">เปรียบเทียบของเสียแต่ละเครื่องจักร</div>
+                        <div class="chart-wrapper">
+                            <canvas id="machineComparisonChart"></canvas>
+                        </div>
+                        <div class="chart-legend">กราฟแท่งแสดงจำนวนของเสียรวมจากแต่ละเครื่องจักร</div>
+                    </div>
+
+                    <!-- Pie Chart: Defect Types -->
+                    <div class="chart-container">
+                        <div class="chart-title">สัดส่วนของเสียแต่ละประเภท</div>
+                        <div class="chart-wrapper">
+                            <canvas id="defectTypesChart"></canvas>
+                        </div>
+                        <div class="chart-legend">กราฟวงกลมแสดงสัดส่วนของเสียแต่ละประเภท</div>
+                    </div>
+
+                    <!-- Bar Chart: Defect Types Details -->
+                    <div class="chart-container">
+                        <div class="chart-title">รายละเอียดของเสียแต่ละประเภท</div>
+                        <div class="chart-wrapper">
+                            <canvas id="defectDetailsChart"></canvas>
+                        </div>
+                        <div class="chart-legend">กราฟแท่งแสดงจำนวนของเสียแต่ละประเภท</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let analysisResults = [];
+        let productMachinesMap = {}; // Store all machines for each product
+        let currentSortColumn = -1;
+        let currentSortAsc = true;
+        let uploadedFiles = []; // Store uploaded files
+        let monthlyData = {}; // Store data for each month
+        let currentViewMonth = 'all'; // Current viewing month
+
+        // Month names in Thai
+        const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 
+                           'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+
+        // Initialize Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const searchBox = document.getElementById('searchBox');
+
+            // Drag and Drop Events
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelection(files);
+                }
+            });
+
+            // File Input Change
+            fileInput.addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (files.length > 0) {
+                    handleFileSelection(files);
+                }
+            });
+
+            // Search Box
+            searchBox.addEventListener('input', filterTable);
+        });
+
+        // Handle multiple file selection
+        function handleFileSelection(files) {
+            const fileArray = Array.from(files);
+            
+            // Validate file types
+            for (let file of fileArray) {
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                if (!['xls', 'xlsx', 'csv'].includes(fileExtension)) {
+                    alert(`ไฟล์ ${file.name} ไม่ใช่ไฟล์ Excel หรือ CSV`);
+                    return;
+                }
+            }
+
+            // Check if total files exceed 12
+            if (uploadedFiles.length + fileArray.length > 12) {
+                alert('สามารถอัพโหลดได้สูงสุด 12 ไฟล์เท่านั้น');
+                return;
+            }
+
+            // Add files to the list
+            fileArray.forEach(file => {
+                uploadedFiles.push(file);
+            });
+
+            updateFilesList();
+        }
+
+        // Update files list display
+        function updateFilesList() {
+            const filesList = document.getElementById('filesList');
+            const filesListContainer = document.getElementById('filesListContainer');
+            const filesCount = document.getElementById('filesCount');
+            const processBtn = document.getElementById('processBtn');
+
+            filesCount.textContent = uploadedFiles.length;
+
+            if (uploadedFiles.length > 0) {
+                filesList.style.display = 'block';
+                
+                filesListContainer.innerHTML = uploadedFiles.map((file, index) => `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <div class="file-icon">📄</div>
+                            <div class="file-details">
+                                <div class="file-name">${file.name}</div>
+                                <div class="file-size">${(file.size / 1024).toFixed(2)} KB</div>
+                            </div>
+                        </div>
+                        <button class="file-remove" onclick="removeFile(${index})">ลบ</button>
+                    </div>
+                `).join('');
+
+                processBtn.style.display = 'block';
+            } else {
+                filesList.style.display = 'none';
+            }
+        }
+
+        // Remove file from list
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            updateFilesList();
+        }
+
+        // Process all uploaded files
+        async function processAllFiles() {
+            if (uploadedFiles.length === 0) {
+                alert('กรุณาเลือกไฟล์ก่อน');
+                return;
+            }
+
+            const modal = document.getElementById('progressModal');
+            const progressInfo = document.getElementById('progressInfo');
+            
+            modal.classList.add('active');
+            monthlyData = {}; // Reset monthly data
+
+            try {
+                // Process each file
+                for (let i = 0; i < uploadedFiles.length; i++) {
+                    const file = uploadedFiles[i];
+                    progressInfo.innerHTML = `
+                        <strong>กำลังประมวลผล:</strong> ${file.name}<br>
+                        <strong>ไฟล์:</strong> ${i + 1}/${uploadedFiles.length}
+                    `;
+
+                    const data = await readFileData(file);
+                    const monthIndex = i; // Assume files are in order (0 = Jan, 1 = Feb, etc.)
+                    monthlyData[monthIndex] = {
+                        fileName: file.name,
+                        month: monthNames[monthIndex],
+                        data: data
+                    };
+                }
+
+                // Combine all data and analyze
+                progressInfo.innerHTML = '<strong>สถานะ:</strong> กำลังรวมข้อมูลและวิเคราะห์...';
+                
+                setTimeout(() => {
+                    const combinedAnalysis = analyzeCombinedData();
+                    displayResults(combinedAnalysis);
+                    
+                    modal.classList.remove('active');
+                    document.getElementById('resultsSection').classList.add('active');
+                    document.getElementById('statsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 500);
+
+            } catch (error) {
+                modal.classList.remove('active');
+                alert('เกิดข้อผิดพลาดในการประมวลผล: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        // Read file data as promise
+        function readFileData(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+                        resolve(jsonData);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+
+                reader.onerror = function() {
+                    reject(new Error('ไม่สามารถอ่านไฟล์ได้'));
+                };
+
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Analyze combined data from all months
+        function analyzeCombinedData() {
+            const summary = {};
+            productMachinesMap = {}; // Reset
+            const monthlyProductData = {}; // Store data by month and product
+
+            const columnMap = {
+                productName: columnToIndex('C'),
+                width: columnToIndex('D'),
+                length: columnToIndex('E'),
+                bagColor: columnToIndex('G'),
+                machine: columnToIndex('O'),
+                defectBlock: columnToIndex('AK'),
+                defectHole: columnToIndex('AL'),
+                defectMark: columnToIndex('AM'),
+                defectNoColor: columnToIndex('AN'),
+                defectFold: columnToIndex('AO'),
+                defectPeel: columnToIndex('AP'),
+                defectPaint: columnToIndex('AQ')
+            };
+
+            // Process each month's data
+            Object.keys(monthlyData).forEach(monthIndex => {
+                const monthInfo = monthlyData[monthIndex];
+                const data = monthInfo.data;
+
+                data.forEach((rowArray, rowIndex) => {
+                    if (rowIndex === 0) return; // Skip header
+                    if (!rowArray || rowArray.length === 0) return;
+
+                    const productName = rowArray[columnMap.productName];
+                    const width = rowArray[columnMap.width];
+                    const length = rowArray[columnMap.length];
+                    const bagColor = rowArray[columnMap.bagColor];
+                    const machineName = rowArray[columnMap.machine];
+
+                    const defectBlock = parseNumber(rowArray[columnMap.defectBlock]);
+                    const defectHole = parseNumber(rowArray[columnMap.defectHole]);
+                    const defectMark = parseNumber(rowArray[columnMap.defectMark]);
+                    const defectNoColor = parseNumber(rowArray[columnMap.defectNoColor]);
+                    const defectFold = parseNumber(rowArray[columnMap.defectFold]);
+                    const defectPeel = parseNumber(rowArray[columnMap.defectPeel]);
+                    const defectPaint = parseNumber(rowArray[columnMap.defectPaint]);
+
+                    const totalDefects = defectBlock + defectHole + defectMark + defectNoColor + 
+                                       defectFold + defectPeel + defectPaint;
+
+                    if (!productName || !machineName || totalDefects === 0) return;
+
+                    const productKey = `${productName} (${width}x${length}) ${bagColor}`;
+                    const groupKey = `${productKey}|${machineName}`;
+
+                    // Aggregate for yearly view
+                    if (!summary[groupKey]) {
+                        summary[groupKey] = {
+                            productDisplay: productKey,
+                            machine: machineName,
+                            defectBlock: 0,
+                            defectHole: 0,
+                            defectMark: 0,
+                            defectNoColor: 0,
+                            defectFold: 0,
+                            defectPeel: 0,
+                            defectPaint: 0,
+                            totalDefects: 0,
+                            monthlyBreakdown: {}
+                        };
+                    }
+
+                    summary[groupKey].defectBlock += defectBlock;
+                    summary[groupKey].defectHole += defectHole;
+                    summary[groupKey].defectMark += defectMark;
+                    summary[groupKey].defectNoColor += defectNoColor;
+                    summary[groupKey].defectFold += defectFold;
+                    summary[groupKey].defectPeel += defectPeel;
+                    summary[groupKey].defectPaint += defectPaint;
+                    summary[groupKey].totalDefects += totalDefects;
+
+                    // Store monthly breakdown
+                    if (!summary[groupKey].monthlyBreakdown[monthIndex]) {
+                        summary[groupKey].monthlyBreakdown[monthIndex] = 0;
+                    }
+                    summary[groupKey].monthlyBreakdown[monthIndex] += totalDefects;
+                });
+            });
+
+            // Group by product
+            Object.values(summary).forEach(item => {
+                const productKey = item.productDisplay;
+                
+                if (!productMachinesMap[productKey]) {
+                    productMachinesMap[productKey] = [];
+                }
+                
+                productMachinesMap[productKey].push(item);
+            });
+
+            // Create final results
+            const finalResults = [];
+            
+            Object.keys(productMachinesMap).forEach(productKey => {
+                const machines = productMachinesMap[productKey];
+                const totalDefects = machines.reduce((sum, m) => sum + m.totalDefects, 0);
+                const machineCount = machines.length;
+
+                finalResults.push({
+                    product: productKey,
+                    machineCount: machineCount,
+                    totalDefects: totalDefects
+                });
+            });
+
+            finalResults.sort((a, b) => b.totalDefects - a.totalDefects);
+            return finalResults;
+        }
+
+        // Helper function: Convert Excel column letter to index (A=0, B=1, etc.)
+        function columnToIndex(col) {
+            let index = 0;
+            for (let i = 0; i < col.length; i++) {
+                index = index * 26 + (col.charCodeAt(i) - 'A'.charCodeAt(0) + 1);
+            }
+            return index - 1;
+        }
+
+        // Helper function to safely parse numbers from Excel or CSV
+        function parseNumber(value) {
+            if (value === null || value === undefined || value === '') {
+                return 0;
+            }
+            if (typeof value === 'number') {
+                return value;
+            }
+            if (typeof value === 'string') {
+                return parseFloat(value.replace(/,/g, '')) || 0;
+            }
+            return 0;
+        }
+
+        // Create Month Tabs
+        function createMonthTabs() {
+            const monthTabsContainer = document.getElementById('monthTabs');
+            const monthCount = Object.keys(monthlyData).length;
+
+            if (monthCount > 0) {
+                monthTabsContainer.style.display = 'flex';
+                
+                let tabsHtml = '<div class="month-tab active" onclick="switchToMonth(\'all\')">ทั้งปี</div>';
+                
+                Object.keys(monthlyData).sort((a, b) => a - b).forEach(monthIndex => {
+                    const monthInfo = monthlyData[monthIndex];
+                    tabsHtml += `<div class="month-tab" onclick="switchToMonth(${monthIndex})">${monthInfo.month}</div>`;
+                });
+                
+                monthTabsContainer.innerHTML = tabsHtml;
+            }
+        }
+
+        // Switch to specific month view
+        function switchToMonth(monthKey) {
+            currentViewMonth = monthKey;
+
+            // Update active tab
+            const tabs = document.querySelectorAll('.month-tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (monthKey === 'all') {
+                // Show yearly view
+                const combinedAnalysis = analyzeCombinedData();
+                displayResults(combinedAnalysis, 'ทั้งปี');
+            } else {
+                // Show specific month
+                const monthData = monthlyData[monthKey];
+                const monthAnalysis = analyzeMonthData(monthData.data);
+                displayResults(monthAnalysis, monthData.month);
+            }
+        }
+
+        // Analyze data for a specific month
+        function analyzeMonthData(data) {
+            const summary = {};
+            productMachinesMap = {};
+
+            const columnMap = {
+                productName: columnToIndex('C'),
+                width: columnToIndex('D'),
+                length: columnToIndex('E'),
+                bagColor: columnToIndex('G'),
+                machine: columnToIndex('O'),
+                defectBlock: columnToIndex('AK'),
+                defectHole: columnToIndex('AL'),
+                defectMark: columnToIndex('AM'),
+                defectNoColor: columnToIndex('AN'),
+                defectFold: columnToIndex('AO'),
+                defectPeel: columnToIndex('AP'),
+                defectPaint: columnToIndex('AQ')
+            };
+
+            data.forEach((rowArray, rowIndex) => {
+                if (rowIndex === 0) return;
+                if (!rowArray || rowArray.length === 0) return;
+
+                const productName = rowArray[columnMap.productName];
+                const width = rowArray[columnMap.width];
+                const length = rowArray[columnMap.length];
+                const bagColor = rowArray[columnMap.bagColor];
+                const machineName = rowArray[columnMap.machine];
+
+                const defectBlock = parseNumber(rowArray[columnMap.defectBlock]);
+                const defectHole = parseNumber(rowArray[columnMap.defectHole]);
+                const defectMark = parseNumber(rowArray[columnMap.defectMark]);
+                const defectNoColor = parseNumber(rowArray[columnMap.defectNoColor]);
+                const defectFold = parseNumber(rowArray[columnMap.defectFold]);
+                const defectPeel = parseNumber(rowArray[columnMap.defectPeel]);
+                const defectPaint = parseNumber(rowArray[columnMap.defectPaint]);
+
+                const totalDefects = defectBlock + defectHole + defectMark + defectNoColor + 
+                                   defectFold + defectPeel + defectPaint;
+
+                if (!productName || !machineName || totalDefects === 0) return;
+
+                const productKey = `${productName} (${width}x${length}) ${bagColor}`;
+                const groupKey = `${productKey}|${machineName}`;
+
+                if (!summary[groupKey]) {
+                    summary[groupKey] = {
+                        productDisplay: productKey,
+                        machine: machineName,
+                        defectBlock: 0,
+                        defectHole: 0,
+                        defectMark: 0,
+                        defectNoColor: 0,
+                        defectFold: 0,
+                        defectPeel: 0,
+                        defectPaint: 0,
+                        totalDefects: 0
+                    };
+                }
+
+                summary[groupKey].defectBlock += defectBlock;
+                summary[groupKey].defectHole += defectHole;
+                summary[groupKey].defectMark += defectMark;
+                summary[groupKey].defectNoColor += defectNoColor;
+                summary[groupKey].defectFold += defectFold;
+                summary[groupKey].defectPeel += defectPeel;
+                summary[groupKey].defectPaint += defectPaint;
+                summary[groupKey].totalDefects += totalDefects;
+            });
+
+            Object.values(summary).forEach(item => {
+                const productKey = item.productDisplay;
+                if (!productMachinesMap[productKey]) {
+                    productMachinesMap[productKey] = [];
+                }
+                productMachinesMap[productKey].push(item);
+            });
+
+            const finalResults = [];
+            Object.keys(productMachinesMap).forEach(productKey => {
+                const machines = productMachinesMap[productKey];
+                const totalDefects = machines.reduce((sum, m) => sum + m.totalDefects, 0);
+                const machineCount = machines.length;
+
+                finalResults.push({
+                    product: productKey,
+                    machineCount: machineCount,
+                    totalDefects: totalDefects
+                });
+            });
+
+            finalResults.sort((a, b) => b.totalDefects - a.totalDefects);
+            return finalResults;
+        }
+
+        // Display Results Function
+        function displayResults(results, periodLabel = 'ทั้งปี') {
+            analysisResults = results;
+
+            // Update header
+            document.querySelector('.results-header h2').textContent = `ผลการวิเคราะห์${periodLabel}`;
+
+            // Create month tabs if not already created
+            createMonthTabs();
+
+            // Calculate statistics
+            const totalProducts = results.length;
+            const totalDefects = results.reduce((sum, item) => sum + item.totalDefects, 0);
+            const avgDefects = totalProducts > 0 ? totalDefects / totalProducts : 0;
+
+            // Display statistics
+            const statsHtml = `
+                <div class="stat-card">
+                    <div class="stat-label">รายการสินค้าทั้งหมด</div>
+                    <div class="stat-value">${totalProducts}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">รวมของเสียทั้งหมด</div>
+                    <div class="stat-value">${totalDefects.toLocaleString()}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">สินค้าที่มีของเสียมากที่สุด</div>
+                    <div class="stat-value">${results.length > 0 ? results[0].totalDefects.toLocaleString() : '0'}</div>
+                </div>
+            `;
+            
+            document.getElementById('statsGrid').innerHTML = statsHtml;
+
+            // Display table
+            renderTable(results);
+        }
+
+        // Render Table Function
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            
+            tbody.innerHTML = data.map((item, index) => `
+                <tr onclick="showProductDetail('${item.product.replace(/'/g, "\\'")}')">
+                    <td>${index + 1}</td>
+                    <td><strong>${item.product}</strong></td>
+                    <td>${item.machineCount} เครื่อง</td>
+                    <td><strong>${item.totalDefects.toLocaleString()}</strong></td>
+                </tr>
+            `).join('');
+        }
+
+        // Sort Table Function
+        function sortTable(columnIndex) {
+            if (currentSortColumn === columnIndex) {
+                currentSortAsc = !currentSortAsc;
+            } else {
+                currentSortColumn = columnIndex;
+                currentSortAsc = true;
+            }
+
+            const sortedData = [...analysisResults].sort((a, b) => {
+                let aVal, bVal;
+                
+                switch(columnIndex) {
+                    case 0: return 0;
+                    case 1: aVal = a.product; bVal = b.product; break;
+                    case 2: aVal = a.machineCount; bVal = b.machineCount; break;
+                    case 3: aVal = a.totalDefects; bVal = b.totalDefects; break;
+                    default: return 0;
+                }
+
+                if (typeof aVal === 'string') {
+                    return currentSortAsc ? aVal.localeCompare(bVal, 'th') : bVal.localeCompare(aVal, 'th');
+                } else {
+                    return currentSortAsc ? aVal - bVal : bVal - aVal;
+                }
+            });
+
+            renderTable(sortedData);
+        }
+
+        // Filter Table
+        function filterTable() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            
+            const filteredData = analysisResults.filter(item => {
+                return item.product.toLowerCase().includes(searchTerm);
+            });
+
+            renderTable(filteredData);
+        }
+
+        // Show Product Detail
+        function showProductDetail(productName) {
+            const machines = productMachinesMap[productName];
+            if (!machines) return;
+
+            // Hide list view
+            document.getElementById('resultsSection').classList.remove('active');
+            
+            // Show detail view
+            document.getElementById('detailView').classList.add('active');
+            document.getElementById('detailProductName').textContent = productName;
+
+            // Sort machines by total defects
+            const sortedMachines = [...machines].sort((a, b) => a.totalDefects - b.totalDefects);
+
+            // Render machine comparison
+            const comparisonHtml = `
+                <div class="comparison-header">
+                    <h3>เปรียบเทียบเครื่องจักรทั้งหมด</h3>
+                    <p>แสดงรายละเอียดของเสียแต่ละประเภทจากทุกเครื่องที่ผลิตสินค้านี้</p>
+                </div>
+                ${sortedMachines.map((machine, index) => `
+                    <div class="machine-row">
+                        <div class="machine-name">เครื่อง ${machine.machine}</div>
+                        <div class="defect-grid">
+                            <div class="defect-item">
+                                <div class="defect-label">บล็อกเลื่อน</div>
+                                <div class="defect-value">${machine.defectBlock.toLocaleString()}</div>
+                            </div>
+                            <div class="defect-item">
+                                <div class="defect-label">รู (โคโรน่า)</div>
+                                <div class="defect-value">${machine.defectHole.toLocaleString()}</div>
+                            </div>
+                            <div class="defect-item">
+                                <div class="defect-label">มาร์คจาง</div>
+                                <div class="defect-value">${machine.defectMark.toLocaleString()}</div>
+                            </div>
+                            <div class="defect-item">
+                                <div class="defect-label">สีไม่ติด</div>
+                                <div class="defect-value">${machine.defectNoColor.toLocaleString()}</div>
+                            </div>
+                            <div class="defect-item">
+                                <div class="defect-label">ผ้าพับ</div>
+                                <div class="defect-value">${machine.defectFold.toLocaleString()}</div>
+                            </div>
+                            <div class="defect-item">
+                                <div class="defect-label">สีลอก</div>
+                                <div class="defect-value">${machine.defectPeel.toLocaleString()}</div>
+                            </div>
+                            <div class="defect-item">
+                                <div class="defect-label">ลบสี/แต้มสี</div>
+                                <div class="defect-value">${machine.defectPaint.toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div class="total-defects">
+                            รวมของเสียทั้งหมด: <strong>${machine.totalDefects.toLocaleString()}</strong> ใบ
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+            document.getElementById('machineComparison').innerHTML = comparisonHtml;
+
+            // Generate analysis
+            const bestMachine = sortedMachines[0];
+            const worstMachine = sortedMachines[sortedMachines.length - 1];
+            const totalDefects = sortedMachines.reduce((sum, m) => sum + m.totalDefects, 0);
+            const avgDefects = totalDefects / sortedMachines.length;
+            
+            // Find defect types and sort from highest to lowest
+            const defectTotals = {
+                'บล็อกเลื่อน': sortedMachines.reduce((sum, m) => sum + m.defectBlock, 0),
+                'รู (โคโรน่า)': sortedMachines.reduce((sum, m) => sum + m.defectHole, 0),
+                'มาร์คจาง': sortedMachines.reduce((sum, m) => sum + m.defectMark, 0),
+                'สีไม่ติด': sortedMachines.reduce((sum, m) => sum + m.defectNoColor, 0),
+                'ผ้าพับ': sortedMachines.reduce((sum, m) => sum + m.defectFold, 0),
+                'สีลอก': sortedMachines.reduce((sum, m) => sum + m.defectPeel, 0),
+                'ลบสี/แต้มสี': sortedMachines.reduce((sum, m) => sum + m.defectPaint, 0)
+            };
+            
+            // Sort defects from highest to lowest
+            const sortedDefects = Object.entries(defectTotals)
+                .sort((a, b) => b[1] - a[1])
+                .filter(item => item[1] > 0);
+
+            // Define ordinal labels for defects
+            const defectLabels = ['ชนิดที่พบมากที่สุด', 'ชนิดที่สอง', 'ชนิดที่สาม', 'ชนิดที่สี่', 'ชนิดที่ห้า', 'ชนิดที่หก', 'ชนิดที่เจ็ด'];
+
+            // Build defect analysis items
+            const defectAnalysisHtml = sortedDefects.map((item, index) => {
+                const percentage = ((item[1] / totalDefects) * 100).toFixed(1);
+                return `
+                <div class="analysis-item">
+                    <h4>ของเสีย${defectLabels[index] || `ที่ ${index + 1}`}</h4>
+                    <p>ของเสียประเภท <span class="highlight-danger">${item[0]}</span> 
+                    มีจำนวน <span class="highlight-danger">${item[1].toLocaleString()} ใบ</span> 
+                    คิดเป็น <span class="highlight-danger">${percentage}%</span> ของของเสียทั้งหมด</p>
+                </div>
+                `;
+            }).join('');
+
+            // Build comparison section (special handling for single machine)
+            let comparisonSectionHtml = '';
+            if (sortedMachines.length === 1) {
+                // Single machine case: show '-' for comparison
+                comparisonSectionHtml = `
+                <div class="analysis-item">
+                    <h4>เครื่องที่มีประสิทธิภาพดีที่สุด</h4>
+                    <p>-</p>
+                </div>
+
+                <div class="analysis-item">
+                    <h4>เครื่องที่ต้องปรับปรุง</h4>
+                    <p>-</p>
+                </div>
+                `;
+            } else {
+                // Multiple machines: show best/worst comparison
+                comparisonSectionHtml = `
+                <div class="analysis-item">
+                    <h4>เครื่องที่มีประสิทธิภาพดีที่สุด</h4>
+                    <p><span class="highlight-success">เครื่อง ${bestMachine.machine}</span> มีของเสียน้อยที่สุด 
+                    <span class="highlight-success">${bestMachine.totalDefects.toLocaleString()} ใบ</span></p>
+                </div>
+
+                <div class="analysis-item">
+                    <h4>เครื่องที่ต้องปรับปรุง</h4>
+                    <p><span class="highlight-danger">เครื่อง ${worstMachine.machine}</span> มีของเสียมากที่สุด 
+                    <span class="highlight-danger">${worstMachine.totalDefects.toLocaleString()} ใบ</span></p>
+                </div>
+                `;
+            }
+
+            const analysisHtml = `
+                <h3>การวิเคราะห์และสรุปผล</h3>
+                
+                <div class="analysis-item">
+                    <h4>ภาพรวม</h4>
+                    <p>สินค้านี้ผลิตโดย <span class="highlight">${sortedMachines.length} เครื่อง</span> 
+                    มีของเสียรวมทั้งหมด <span class="highlight-danger">${totalDefects.toLocaleString()} ใบ</span> 
+                </div>
+
+                ${comparisonSectionHtml}
+
+                ${defectAnalysisHtml}
+            `;
+            document.getElementById('analysisSummary').innerHTML = analysisHtml;
+
+            // Create charts
+            createProductCharts(sortedMachines, defectTotals);
+
+            // Scroll to stats grid when viewing details
+            document.getElementById('statsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Global chart instances
+        let machineComparisonChartInstance = null;
+        let defectTypesChartInstance = null;
+        let defectDetailsChartInstance = null;
+
+        // Create charts for product detail view
+        function createProductCharts(machines, defectTotals) {
+            // Destroy existing charts
+            if (machineComparisonChartInstance) machineComparisonChartInstance.destroy();
+            if (defectTypesChartInstance) defectTypesChartInstance.destroy();
+            if (defectDetailsChartInstance) defectDetailsChartInstance.destroy();
+
+            // Chart 1: Machine Comparison (Bar Chart)
+            const machineNames = machines.map(m => `เครื่อง ${m.machine}`);
+            const machineDefects = machines.map(m => m.totalDefects);
+
+            // Avoid division by zero when there is only one machine (denom = 0)
+            const denom = machines.length > 1 ? machines.length - 1 : 1;
+
+            const ctx1 = document.getElementById('machineComparisonChart').getContext('2d');
+            machineComparisonChartInstance = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: machineNames,
+                    datasets: [{
+                        label: 'จำนวนของเสีย (ใบ)',
+                        data: machineDefects,
+                        backgroundColor: machines.map((m, index) => {
+                            // Color gradient from green (best) to red (worst)
+                            let ratio = index / denom;
+                            // Clamp ratio to [0,1] to avoid any floating errors
+                            ratio = Math.min(Math.max(ratio, 0), 1);
+                            const red = Math.round(52 + (255 - 52) * ratio);
+                            const green = Math.round(199 - (199 - 59) * ratio);
+                            const blue = Math.round(89 - (89 - 48) * ratio);
+                            return `rgba(${red}, ${green}, ${blue}, 0.8)`;
+                        }),
+                        borderColor: machines.map((m, index) => {
+                            let ratio = index / denom;
+                            ratio = Math.min(Math.max(ratio, 0), 1);
+                            const red = Math.round(52 + (255 - 52) * ratio);
+                            const green = Math.round(199 - (199 - 59) * ratio);
+                            const blue = Math.round(89 - (89 - 48) * ratio);
+                            return `rgb(${red}, ${green}, ${blue})`;
+                        }),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14,
+                                family: "'Sarabun', sans-serif"
+                            },
+                            bodyFont: {
+                                size: 13,
+                                family: "'Sarabun', sans-serif"
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    return 'ของเสีย: ' + context.parsed.y.toLocaleString() + ' ใบ';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: {
+                                    family: "'Sarabun', sans-serif"
+                                },
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: "'Sarabun', sans-serif",
+                                    size: 12
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Defect Types (Pie Chart)
+            const defectLabels = Object.keys(defectTotals).filter(key => defectTotals[key] > 0);
+            const defectValues = defectLabels.map(label => defectTotals[label]);
+            const defectColors = [
+                'rgba(255, 99, 132, 0.8)',   // แดง - บล็อกเลื่อน
+                'rgba(54, 162, 235, 0.8)',   // น้ำเงิน - รู(โคโรน่า)
+                'rgba(255, 206, 86, 0.8)',   // เหลือง - มาร์คจาง
+                'rgba(75, 192, 192, 0.8)',   // เขียวอมฟ้า - สีไม่ติด
+                'rgba(153, 102, 255, 0.8)',  // ม่วง - ผ้าพับ
+                'rgba(255, 159, 64, 0.8)',   // ส้ม - สีลอก
+                'rgba(199, 199, 199, 0.8)'   // เทา - ลบสี/แต้มสี
+            ];
+
+            const ctx2 = document.getElementById('defectTypesChart').getContext('2d');
+            defectTypesChartInstance = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: defectLabels,
+                    datasets: [{
+                        data: defectValues,
+                        backgroundColor: defectColors.slice(0, defectLabels.length),
+                        borderColor: '#ffffff',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: "'Sarabun', sans-serif",
+                                    size: 12
+                                },
+                                padding: 15,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14,
+                                family: "'Sarabun', sans-serif"
+                            },
+                            bodyFont: {
+                                size: 13,
+                                family: "'Sarabun', sans-serif"
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return label + ': ' + value.toLocaleString() + ' ใบ (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Chart 3: Defect Details (Horizontal Bar Chart)
+            const sortedDefectLabels = Object.entries(defectTotals)
+                .filter(([key, value]) => value > 0)
+                .sort((a, b) => b[1] - a[1])
+                .map(([key, value]) => key);
+            
+            const sortedDefectValues = sortedDefectLabels.map(label => defectTotals[label]);
+
+            const ctx3 = document.getElementById('defectDetailsChart').getContext('2d');
+            defectDetailsChartInstance = new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: sortedDefectLabels,
+                    datasets: [{
+                        label: 'จำนวนของเสีย (ใบ)',
+                        data: sortedDefectValues,
+                        backgroundColor: defectColors.slice(0, sortedDefectLabels.length),
+                        borderColor: defectColors.slice(0, sortedDefectLabels.length).map(color => 
+                            color.replace('0.8', '1')
+                        ),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14,
+                                family: "'Sarabun', sans-serif"
+                            },
+                            bodyFont: {
+                                size: 13,
+                                family: "'Sarabun', sans-serif"
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.x;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return 'ของเสีย: ' + value.toLocaleString() + ' ใบ (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: {
+                                    family: "'Sarabun', sans-serif"
+                                },
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                font: {
+                                    family: "'Sarabun', sans-serif",
+                                    size: 12
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Show List View
+        function showListView() {
+            document.getElementById('detailView').classList.remove('active');
+            document.getElementById('resultsSection').classList.add('active');
+            document.getElementById('statsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Export to Excel (XLSX) with multiple sheets
+        function exportToCSV() {
+            try {
+                // Create a new workbook
+                const wb = XLSX.utils.book_new();
+                
+                // Add yearly summary sheet
+                const yearlyHeaders = ['ลำดับ', 'รายการสินค้า', 'จำนวนเครื่อง', 'รวมของเสีย'];
+                const yearlyRows = analysisResults.map((item, index) => [
+                    index + 1,
+                    item.product,
+                    item.machineCount,
+                    item.totalDefects
+                ]);
+                
+                const yearlyData = [yearlyHeaders, ...yearlyRows];
+                const wsYearly = XLSX.utils.aoa_to_sheet(yearlyData);
+                XLSX.utils.book_append_sheet(wb, wsYearly, 'สรุปทั้งปี');
+                
+                // Add monthly sheets if available
+                if (Object.keys(monthlyData).length > 0) {
+                    Object.keys(monthlyData).sort((a, b) => a - b).forEach(monthIndex => {
+                        const monthInfo = monthlyData[monthIndex];
+                        const monthAnalysis = analyzeMonthData(monthInfo.data);
+                        
+                        const monthHeaders = ['ลำดับ', 'รายการสินค้า', 'จำนวนเครื่อง', 'รวมของเสีย'];
+                        const monthRows = monthAnalysis.map((item, index) => [
+                            index + 1,
+                            item.product,
+                            item.machineCount,
+                            item.totalDefects
+                        ]);
+                        
+                        const monthData = [monthHeaders, ...monthRows];
+                        const wsMonth = XLSX.utils.aoa_to_sheet(monthData);
+                        XLSX.utils.book_append_sheet(wb, wsMonth, monthInfo.month);
+                    });
+                }
+                
+                // Generate and download the file
+                const fileName = `PD4_Analysis_FullYear_${new Date().toISOString().split('T')[0]}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+            } catch (error) {
+                console.error('Export error:', error);
+                // Fallback to simple CSV export
+                exportSimpleCSV();
+            }
+        }
+
+        // Simple CSV export (fallback)
+        function exportSimpleCSV() {
+            const headers = ['ลำดับ', 'รายการสินค้า', 'จำนวนเครื่อง', 'รวมของเสีย'];
+            
+            const rows = analysisResults.map((item, index) => [
+                index + 1,
+                `"${item.product}"`,
+                item.machineCount,
+                item.totalDefects
+            ]);
+
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.join(','))
+            ].join('\n');
+
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `PD4_Analysis_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+                document.body.removeChild(link);
+            }
+        </script>
+
+        <!-- Footer -->
+        <footer class="site-footer" role="contentinfo">
+            <div class="copyright">©2025 PD3 Production Analytics. All rights reserved. &nbsp; Designed and developed by Awirut (ZP1048)</div>
+        </footer>
+    </body>
+    </html>
